@@ -16,7 +16,7 @@ if [[ ! -f "secrets/env.production.enc" ]]; then
 fi
 
 # Decrypt with AES-256-CBC using PBKDF2
-openssl enc -aes-256-cbc -d -pbkdf2 -salt \
+openssl enc -pbkdf2 -salt \
   -in secrets/env.production.enc \
   -out .env.production \
   -pass pass:"${DECRYPT_PASSPHRASE}"
