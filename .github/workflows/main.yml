@@ -9,22 +9,17 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-
     defaults:
       run:
         working-directory: shutter-shelves
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: List workspace files
+      - name: Normalize line endings & make script executable
         run: |
-          echo "PWD: $PWD"
-          ls -R .
-
-      - name: Normalize decrypt.sh line endings
-        run: sed -i 's/\r$//' decrypt.sh
+          sed -i 's/\r$//' decrypt.sh
+          chmod +x decrypt.sh
 
       - name: Decrypt production environment file
         shell: bash
@@ -35,8 +30,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'npm'
+          node-version: "18"
+          cache: "npm"
           cache-dependency-path: shutter-shelves/package-lock.json
 
       - name: Install dependencies
