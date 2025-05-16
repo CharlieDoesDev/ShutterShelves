@@ -22,4 +22,4 @@ openssl enc -aes-256-cbc -d -pbkdf2 -salt \
   -pass pass:"${DECRYPT_PASSPHRASE}"
 
 echo ".env.production has been created."
-
+ 
