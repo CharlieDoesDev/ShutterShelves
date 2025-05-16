@@ -9,16 +9,14 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-
     defaults:
       run:
         working-directory: shutter-shelves
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Normalize decrypt.sh line endings & make executable
+      - name: Normalize line endings & make script executable
         run: |
           sed -i 's/\r$//' decrypt.sh
           chmod +x decrypt.sh
@@ -34,7 +32,7 @@ jobs:
         with:
           node-version: "18"
           cache: "npm"
-          cache-dependency-path: package-lock.json
+          cache-dependency-path: shutter-shelves/package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -46,5 +44,5 @@ jobs:
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist   # since working-directory is shutter-shelves, this resolves to shutter-shelves/dist
+          publish_dir: ./shutter-shelves/dist
           keep_files: false
