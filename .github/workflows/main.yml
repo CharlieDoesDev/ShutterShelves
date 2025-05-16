@@ -4,12 +4,12 @@ name: Deploy static content to Pages
 on:
   push:
     branches:
-      - build  # or main, whichever branch you use for CI
+      - build  # or main
 
 permissions:
-  contents: read     # for checkout
-  pages: write       # to push to GitHub Pages
-  id-token: write    # required by configure-pages
+  contents: read
+  pages: write
+  id-token: write
 
 concurrency:
   group: pages
@@ -28,14 +28,15 @@ jobs:
         with:
           persist-credentials: true
 
-      - name: Normalize decrypt.sh line endings
-        run: sed -i 's/\r$//' shutter-shelves/decrypt.sh
-
-      - name: Make decrypt.sh executable
-        run: chmod +x shutter-shelves/decrypt.sh
+      - name: Normalize decrypt.sh & make it executable
+        run: |
+          sed -i 's/\r$//' shutter-shelves/decrypt.sh
+          chmod +x shutter-shelves/decrypt.sh
 
       - name: Decrypt production environment
-        run: bash shutter-shelves/decrypt.sh
+        run: |
+          cd shutter-shelves
+          bash decrypt.sh
         env:
           DECRYPT_PASSPHRASE: ${{ secrets.DECRYPT_PASSPHRASE }}
 
