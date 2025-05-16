@@ -26,7 +26,7 @@ export default {
 
       // 2) Caption via HF
       const capRes = await fetch(
-        "https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-base",
+        "https://api-inference.huggingface.co/models/nlpconnect/vit-gpt2-image-captioning",
         {
           method: "POST",
           headers: {
