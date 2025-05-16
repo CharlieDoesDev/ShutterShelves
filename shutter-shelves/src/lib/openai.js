@@ -14,7 +14,7 @@ async function proxyPost(body) {
   return res.json();
 }
 
-export function extractPantryItems(base64, mime) {
+export function extractPantryItems(base64) {
   return proxyPost({ imageBase64: base64, mode: "items" });
 }
 

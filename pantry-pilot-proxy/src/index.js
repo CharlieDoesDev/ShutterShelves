@@ -1,8 +1,6 @@
-import { OpenAI } from "openai";
-
 export default {
   async fetch(request, env) {
-    // 1) CORS preflight
+    // Handle CORS preflight
     if (request.method === "OPTIONS") {
       return new Response(null, {
         status: 204,
@@ -10,89 +8,97 @@ export default {
           "Access-Control-Allow-Origin": "*",
           "Access-Control-Allow-Methods": "POST, OPTIONS",
           "Access-Control-Allow-Headers": "Content-Type",
-        },
+        }
       });
     }
     if (request.method !== "POST") {
       return new Response("Method Not Allowed", {
         status: 405,
-        headers: { "Access-Control-Allow-Origin": "*" },
+        headers: { "Access-Control-Allow-Origin": "*" }
       });
     }
 
-    // 2) Parse payload
-    let { imageBase64, mode } = await request.json().catch(() => ({  }));
+    let { imageBase64, mode } = await request.json().catch(() => ({}));
     if (!imageBase64 || !mode) {
       return new Response("Missing imageBase64 or mode", {
         status: 400,
-        headers: { "Access-Control-Allow-Origin": "*" },
+        headers: { "Access-Control-Allow-Origin": "*" }
       });
     }
 
+    // 1) Caption with BLIP
+    const capRes = await fetch(
+      "https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-base",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${env.HF_TOKEN}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ inputs: imageBase64 })
+      }
+    );
+    if (!capRes.ok) {
+      const text = await capRes.text();
+      return new Response(`Caption error ${capRes.status}: ${text}`, { status: 502 });
+    }
+    const capJson = await capRes.json();
+    const caption = capJson[0]?.generated_text ?? "";
+
     try {
-      // 3) Step 1: caption via Hugging Face
-      const hfRes = await fetch(
-        "https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-base",
+      // 2) Generation with BloomZ
+      let prompt, model;
+      if (mode === "items") {
+        model = "bigscience/bloomz-7b1-mt";
+        prompt = `Extract pantry item names from this description:\n\n"${caption}"\n\nReturn a JSON array of strings.`;
+      } else {
+        model = "bigscience/bloomz-7b1-mt";
+        prompt = `Given these pantry items (as JSON array), return up to five recipe titles as a JSON array:\n\n${imageBase64}`;
+      }
+
+      const genRes = await fetch(
+        `https://api-inference.huggingface.co/models/${model}`,
         {
           method: "POST",
           headers: {
-            "Authorization": `Bearer ${env.HF_TOKEN}`,
-            "Content-Type": "application/json",
+            Authorization: `Bearer ${env.HF_TOKEN}`,
+            "Content-Type": "application/json"
           },
-          body: JSON.stringify({ inputs: imageBase64 }),
+          body: JSON.stringify({
+            inputs: prompt,
+            parameters: { max_new_tokens: 150, temperature: mode === "items" ? 0 : 0.7 }
+          })
         }
       );
-      if (!hfRes.ok) throw new Error(`HF ${hfRes.status}: ${await hfRes.text()}`);
-      const hfJson = await hfRes.json();
-      const caption = hfJson[0]?.generated_text || "";
-
-      // 4) Step 2: GPT-4 Turbo for items or recipes
-      const client = new OpenAI({ apiKey: env.OPENAI_API_KEY });
-      let messages, temperature, max_tokens;
-
-      if (mode === "items") {
-        messages = [
-          { role: "system", content: "Extract pantry item names from this description." },
-          { role: "user", content: caption },
-        ];
-        temperature = 0;
-        max_tokens = 200;
-      } else {
-        messages = [
-          { role: "system", content: "Given a JSON array of pantry items, return up to five recipe titles as a JSON array." },
-          { role: "user", content: imageBase64 }, // here imageBase64 holds JSON-stringified items
-        ];
-        temperature = 0.7;
-        max_tokens = 150;
+      if (!genRes.ok) {
+        const text = await genRes.text();
+        return new Response(`Generation error ${genRes.status}: ${text}`, { status: 502 });
       }
+      const genJson = await genRes.json();
+      // HF returns an array of { generated_text }
+      const text = genJson[0].generated_text.trim();
 
-      const chat = await client.chat.completions.create({
-        model: "gpt-4-turbo",
-        messages,
-        temperature,
-        max_tokens,
-      });
+      // Extract the JSON array from the generated text
+      const start = text.indexOf("[");
+      const end = text.lastIndexOf("]") + 1;
+      const jsonStr = start >= 0 && end > start ? text.slice(start, end) : "[]";
+      const result = JSON.parse(jsonStr);
 
-      const result = chat.choices?.[0]?.message?.content || "[]";
-      return new Response(result, {
+      return new Response(JSON.stringify(result), {
         status: 200,
         headers: {
           "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-        },
-      });
-
-    } catch (err) {
-      return new Response(
-        JSON.stringify({ error: err.message }),
-        {
-          status: 500,
-          headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "*",
-          },
+          "Access-Control-Allow-Origin": "*"
         }
-      );
+      });
+    } catch (err) {
+      return new Response(JSON.stringify({ error: err.message }), {
+        status: 500,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*"
+        }
+      });
     }
-  },
+  }
 };
