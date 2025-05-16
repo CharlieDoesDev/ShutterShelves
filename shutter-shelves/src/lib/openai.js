@@ -7,10 +7,7 @@ async function proxyPost(body) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Proxy error ${res.status}: ${text}`);
-  }
+  if (!res.ok) throw new Error(`Proxy error ${res.status}: ${await res.text()}`);
   return res.json();
 }
 
