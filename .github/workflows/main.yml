@@ -6,6 +6,9 @@ on:
     branches:
       - build
 
+permissions:
+  contents: write    # allow GITHUB_TOKEN to push to gh-pages
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -14,7 +17,11 @@ jobs:
         working-directory: shutter-shelves
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: true
 
       - name: Normalize line endings & make script executable
         run: |
@@ -32,7 +39,7 @@ jobs:
         with:
           node-version: "18"
           cache: "npm"
-          cache-dependency-path: shutter-shelves/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
         run: npm ci
