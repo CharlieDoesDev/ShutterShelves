@@ -1,20 +1,23 @@
-// src/lib/openai.js
+// In your unpacked helper (e.g. src/lib/api.js), replace cy() with:
+
 const PROXY_URL = "https://pantry-pilot-proxy.shuttershells.workers.dev";
 
-async function proxyPost(body) {
+export async function proxyPost(payload) {
   const res = await fetch(PROXY_URL, {
     method: "POST",
+    mode: "cors",                        // ensure CORS is allowed
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+    body: JSON.stringify(payload),
   });
-  if (!res.ok) throw new Error(`Proxy error ${res.status}: ${await res.text()}`);
-  return res.json();
-}
 
-export function extractPantryItems(base64) {
-  return proxyPost({ imageBase64: base64, mode: "items" });
-}
+  // Read the raw text no matter what
+  const text = await res.text();
 
-export function getTopRecipes(items) {
-  return proxyPost({ imageBase64: JSON.stringify(items), mode: "recipes" });
+  if (!res.ok) {
+    // Throw full status + body so you see e.g. "Caption error 404: Not Found"
+    throw new Error(`Proxy error ${res.status}: ${text}`);
+  }
+
+  // Parse as JSON if OK
+  return JSON.parse(text);
 }
