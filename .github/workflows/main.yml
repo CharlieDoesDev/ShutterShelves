@@ -3,23 +3,24 @@ name: Build & Deploy to GitHub Pages
 
 on:
   push:
-    branches: [ main ]
+    branches: [ build ]
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    steps:
+    defaults:
+      run:
+        working-directory: shutter-shelves
 
+    steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # DEBUG: list all files to see where decrypt.sh landed
       - name: List workspace files
         run: |
-          echo "Working directory: $PWD"
+          echo "PWD: $PWD"
           ls -R .
 
-      # Decrypt .env.production (invoke via bash—no chmod needed)
       - name: Decrypt production environment file
         run: bash decrypt.sh
         env:
