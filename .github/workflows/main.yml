@@ -24,7 +24,7 @@ jobs:
       - name: Decrypt production environment file
         run: bash decrypt.sh
         env:
-          DECRYPT_PASSPHRASE: ${{ secrets.PurplePanda8 }}
+          DECRYPT_PASSPHRASE: ${{ secrets.DECRYPT_PASSPHRASE }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
