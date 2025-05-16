@@ -1,51 +1,63 @@
 # .github/workflows/deploy.yml
-name: Build & Deploy to GitHub Pages
+name: Deploy static content to Pages
 
 on:
   push:
     branches:
-      - build
+      - build  # or main, whichever branch you use for CI
 
 permissions:
-  contents: write
+  contents: read     # for checkout
+  pages: write       # to push to GitHub Pages
+  id-token: write    # required by configure-pages
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: shutter-shelves
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
 
-      - name: Normalize line endings & make script executable
-        run: |
-          sed -i 's/\r$//' decrypt.sh
-          chmod +x decrypt.sh
+      - name: Normalize decrypt.sh line endings
+        run: sed -i 's/\r$//' shutter-shelves/decrypt.sh
 
-      - name: Decrypt production environment file
-        shell: bash
-        run: bash decrypt.sh
+      - name: Make decrypt.sh executable
+        run: chmod +x shutter-shelves/decrypt.sh
+
+      - name: Decrypt production environment
+        run: bash shutter-shelves/decrypt.sh
         env:
           DECRYPT_PASSPHRASE: ${{ secrets.DECRYPT_PASSPHRASE }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "18"
-          cache: "npm"
-          cache-dependency-path: shutter-shelves/package-lock.json
+          node-version: '18'
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Install & build
+        run: |
+          cd shutter-shelves
+          npm ci
+          npm run build
 
-      - name: Build
-        run: npm run build
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: shutter-shelves/dist
 
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
-          keep_files: false
+        id: deployment
+        uses: actions/deploy-pages@v4
