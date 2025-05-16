@@ -4,7 +4,7 @@ name: Build & Deploy to GitHub Pages
 on:
   push:
     branches:
-      - build
+      - main
 
 jobs:
   build-and-deploy:
@@ -15,28 +15,32 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Decrypt .env.production
+      # 2. Make decrypt.sh executable
+      - name: Make decrypt script executable
+        run: chmod +x ./decrypt.sh
+
+      # 3. Decrypt .env.production
       - name: Decrypt production environment file
-        run: ./decrypt.sh
+        run: bash ./decrypt.sh
         env:
           DECRYPT_PASSPHRASE: ${{ secrets.PurplePanda8 }}
 
-      # 3. Set up Node.js
+      # 4. Set up Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
 
-      # 4. Install dependencies
+      # 5. Install dependencies
       - name: Install dependencies
         run: npm ci
 
-      # 5. Build the static site
+      # 6. Build the static site
       - name: Build
         run: npm run build
 
-      # 6. Deploy to GitHub Pages
+      # 7. Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
