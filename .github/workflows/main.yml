@@ -28,18 +28,6 @@ jobs:
         with:
           persist-credentials: true
 
-      - name: Normalize decrypt.sh & make it executable
-        run: |
-          sed -i 's/\r$//' shutter-shelves/decrypt.sh
-          chmod +x shutter-shelves/decrypt.sh
-
-      - name: Decrypt production environment
-        run: |
-          cd shutter-shelves
-          bash decrypt.sh
-        env:
-          DECRYPT_PASSPHRASE: ${{ secrets.DECRYPT_PASSPHRASE }}
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
