@@ -3,11 +3,13 @@ name: Build & Deploy to GitHub Pages
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - build
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+
     defaults:
       run:
         working-directory: shutter-shelves
@@ -35,8 +37,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'npm'
+          node-version: "18"
+          cache: "npm"
           cache-dependency-path: shutter-shelves/package-lock.json
 
       - name: Install dependencies
