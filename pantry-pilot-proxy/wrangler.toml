@@ -1,0 +1,8 @@
+name = "pantry-pilot-proxy"    # <— exactly your Worker’s name
+main = "src/index.js"
+compatibility_date = "2025-05-15"
+
+[vars]
+AZURE_OPENAI_ENDPOINT    = "https://YOUR_RESOURCE.openai.azure.com/"
+AZURE_OPENAI_DEPLOYMENT  = "gpt-4-turbo-vision-preview"
+AZURE_OPENAI_API_VERSION = "2024-03-15-preview"
