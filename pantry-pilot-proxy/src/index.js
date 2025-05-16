@@ -1,10 +1,8 @@
-// pantry-pilot-proxy/src/index.js
-
 import { OpenAI } from "openai";
 
 export default {
   async fetch(request, env) {
-    // 1) Handle OPTIONS preflight
+    // 1) CORS preflight
     if (request.method === "OPTIONS") {
       return new Response(null, {
         status: 204,
@@ -15,8 +13,6 @@ export default {
         },
       });
     }
-
-    // 2) Only allow POST thereafter
     if (request.method !== "POST") {
       return new Response("Method Not Allowed", {
         status: 405,
@@ -24,18 +20,8 @@ export default {
       });
     }
 
-    // 3) Parse JSON payload
-    let payload;
-    try {
-      payload = await request.json();
-    } catch {
-      return new Response("Invalid JSON", {
-        status: 400,
-        headers: { "Access-Control-Allow-Origin": "*" },
-      });
-    }
-
-    const { imageBase64, mode } = payload;
+    // 2) Parse payload
+    let { imageBase64, mode } = await request.json().catch(() => ({  }));
     if (!imageBase64 || !mode) {
       return new Response("Missing imageBase64 or mode", {
         status: 400,
@@ -43,57 +29,70 @@ export default {
       });
     }
 
-    // 4) Init OpenAI client with secret from env
-    const client = new OpenAI({
-      apiKey: env.OPENAI_API_KEY,
-      azure: {
-        resourceName: env.AZURE_OPENAI_ENDPOINT
-          .replace(/^https?:\/\//, "")
-          .replace(/\/$/, ""),
-        deploymentName: env.AZURE_OPENAI_DEPLOYMENT,
-        apiVersion: env.AZURE_OPENAI_API_VERSION,
-      },
-    });
-
-    // 5) Build messages
-    let messages;
-    if (mode === "items") {
-      messages = [
-        { role: "system", content: "Extract pantry item names from this image." },
-        { role: "user", content: imageBase64, contentType: "image/png" },
-      ];
-    } else {
-      messages = [
-        { role: "system", content: "Given a JSON array of pantry items, return up to five recipe titles as a JSON array." },
-        { role: "user", content: imageBase64 },
-      ];
-    }
-
-    // 6) Call OpenAI
     try {
-      const resp = await client.chat.completions.create({
-        model: env.AZURE_OPENAI_DEPLOYMENT,
-        messages,
-        temperature: mode === "items" ? 0 : 0.7,
-        max_tokens: mode === "items" ? 200 : 150,
-      });
-      const body = resp.choices?.[0]?.message?.content || "[]";
+      // 3) Step 1: caption via Hugging Face
+      const hfRes = await fetch(
+        "https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-base",
+        {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${env.HF_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ inputs: imageBase64 }),
+        }
+      );
+      if (!hfRes.ok) throw new Error(`HF ${hfRes.status}: ${await hfRes.text()}`);
+      const hfJson = await hfRes.json();
+      const caption = hfJson[0]?.generated_text || "";
 
-      return new Response(body, {
+      // 4) Step 2: GPT-4 Turbo for items or recipes
+      const client = new OpenAI({ apiKey: env.OPENAI_API_KEY });
+      let messages, temperature, max_tokens;
+
+      if (mode === "items") {
+        messages = [
+          { role: "system", content: "Extract pantry item names from this description." },
+          { role: "user", content: caption },
+        ];
+        temperature = 0;
+        max_tokens = 200;
+      } else {
+        messages = [
+          { role: "system", content: "Given a JSON array of pantry items, return up to five recipe titles as a JSON array." },
+          { role: "user", content: imageBase64 }, // here imageBase64 holds JSON-stringified items
+        ];
+        temperature = 0.7;
+        max_tokens = 150;
+      }
+
+      const chat = await client.chat.completions.create({
+        model: "gpt-4-turbo",
+        messages,
+        temperature,
+        max_tokens,
+      });
+
+      const result = chat.choices?.[0]?.message?.content || "[]";
+      return new Response(result, {
         status: 200,
         headers: {
           "Content-Type": "application/json",
           "Access-Control-Allow-Origin": "*",
         },
       });
+
     } catch (err) {
-      return new Response(JSON.stringify({ error: err.message }), {
-        status: 500,
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-        },
-      });
+      return new Response(
+        JSON.stringify({ error: err.message }),
+        {
+          status: 500,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+          },
+        }
+      );
     }
   },
 };
