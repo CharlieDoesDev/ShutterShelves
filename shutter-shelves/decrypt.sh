@@ -15,10 +15,10 @@ if [[ ! -f "secrets/env.production.enc" ]]; then
   exit 1
 fi
 
-# Decrypt with AES-256-CBC using PBKDF2
-openssl enc -aes-256-cbc -d -pbkdf2 -salt \
+# No explicit cipher: OpenSSL will auto‐detect the right one
+openssl enc -d -pbkdf2 -salt \
   -in secrets/env.production.enc \
   -out .env.production \
   -pass pass:"${DECRYPT_PASSPHRASE}"
 
-echo ".env.production has been created."
+echo "✅ .env.production decrypted"
