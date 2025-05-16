@@ -19,6 +19,6 @@ fi
 openssl enc -aes-256-cbc -d -pbkdf2 -salt \
   -in secrets/env.production.enc \
   -out .env.production \
-  -pass pass:"${PurplePanda8}"
+  -pass pass:"${DECRYPT_PASSPHRASE}"
 
 echo ".env.production has been created."
