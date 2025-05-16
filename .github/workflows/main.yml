@@ -23,22 +23,20 @@ jobs:
           echo "PWD: $PWD"
           ls -R .
 
-      - name: Make decrypt.sh executable
-        run: chmod +x decrypt.sh
+      - name: Normalize decrypt.sh line endings
+        run: sed -i 's/\r$//' decrypt.sh
 
       - name: Decrypt production environment file
         shell: bash
-        run: |
-          echo "Using passphrase: ${DECRYPT_PASSPHRASE:0:4}****"
-          bash decrypt.sh
+        run: bash decrypt.sh
         env:
           DECRYPT_PASSPHRASE: ${{ secrets.DECRYPT_PASSPHRASE }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "18"
-          cache: "npm"
+          node-version: '18'
+          cache: 'npm'
           cache-dependency-path: shutter-shelves/package-lock.json
 
       - name: Install dependencies
