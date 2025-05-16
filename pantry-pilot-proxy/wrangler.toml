@@ -2,3 +2,4 @@
 name = "pantry-pilot-proxy"
 main = "src/index.js"
 compatibility_date = "2025-05-16"
+
