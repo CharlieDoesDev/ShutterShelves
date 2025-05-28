@@ -115,12 +115,62 @@ export default function App() {
   );
 }
 
-// Simple demo: assumes config.env.enc is base64-encoded JSON
+// Real decryptEnv: matches encrypt_env.py (AES-GCM, PBKDF2, SHA256, 200k iterations, 16-byte salt, 12-byte nonce)
 async function decryptEnv(encBuffer) {
-  // Convert ArrayBuffer to string
-  const b64 = btoa(String.fromCharCode(...new Uint8Array(encBuffer)));
-  // Decode base64 to JSON string
-  const jsonStr = atob(b64);
-  // Parse JSON
-  return JSON.parse(jsonStr);
+  // Prompt for password (show a modal or use prompt for demo)
+  const password = prompt('Enter decryption password:');
+  if (!password) throw new Error('No password provided');
+
+  const bytes = new Uint8Array(encBuffer);
+  const salt = bytes.slice(0, 16);
+  const nonce = bytes.slice(16, 28);
+  const ciphertext = bytes.slice(28);
+
+  // Derive key using PBKDF2 (SHA256, 200k iterations)
+  const keyMaterial = await window.crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(password),
+    'PBKDF2',
+    false,
+    ['deriveKey']
+  );
+  const key = await window.crypto.subtle.deriveKey(
+    {
+      name: 'PBKDF2',
+      salt: salt,
+      iterations: 200000,
+      hash: 'SHA-256',
+    },
+    keyMaterial,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['decrypt']
+  );
+
+  // Decrypt with AES-GCM
+  let plaintext;
+  try {
+    plaintext = await window.crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv: nonce },
+      key,
+      ciphertext
+    );
+  } catch (e) {
+    throw new Error('Decryption failed: wrong password or corrupted file');
+  }
+
+  // Try to parse as .env (key=value) or JSON
+  const text = new TextDecoder().decode(plaintext);
+  try {
+    // Try JSON first
+    return JSON.parse(text);
+  } catch {
+    // Fallback: parse .env format
+    const env = {};
+    text.split(/\r?\n/).forEach(line => {
+      const m = line.match(/^([A-Za-z0-9_]+)=(.*)$/);
+      if (m) env[m[1]] = m[2];
+    });
+    return env;
+  }
 }
