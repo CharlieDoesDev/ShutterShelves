@@ -1,6 +1,6 @@
 // src/lib/azure-vision.js
 // Use Azure Computer Vision for image analysis
-const AZURE_VISION_ENDPOINT = import.meta.env.VITE_AZURE_VISION_ENDPOINT; // Use the Computer Vision endpoint from env
+const AZURE_VISION_ENDPOINT = (import.meta.env.VITE_AZURE_VISION_ENDPOINT || '').replace(/\/?$/, '/'); // Always ends with /
 const AZURE_VISION_KEY = import.meta.env.VITE_AZURE_VISION_KEY;
 
 export async function analyzeImageWithAzure(imageBase64) {
@@ -14,7 +14,7 @@ export async function analyzeImageWithAzure(imageBase64) {
   const blob = new Blob([byteArray], { type: 'image/jpeg' });
 
   const res = await fetch(
-    AZURE_VISION_ENDPOINT + 'vision/v4.0/analyze?visualFeatures=Description,Tags',
+    AZURE_VISION_ENDPOINT + 'vision/v3.2/analyze?visualFeatures=Description,Tags',
     {
       method: 'POST',
       headers: {
