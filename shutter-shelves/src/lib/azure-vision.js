@@ -1,6 +1,6 @@
 // src/lib/azure-vision.js
 // Use Azure Computer Vision for image analysis
-const AZURE_VISION_ENDPOINT = import.meta.env.VITE_AZURE_OPENAI_ENDPOINT; // Use the Computer Vision endpoint from env
+const AZURE_VISION_ENDPOINT = import.meta.env.VITE_AZURE_VISION_ENDPOINT; // Use the Computer Vision endpoint from env
 const AZURE_VISION_KEY = import.meta.env.VITE_AZURE_VISION_KEY;
 
 export async function analyzeImageWithAzure(imageBase64) {
