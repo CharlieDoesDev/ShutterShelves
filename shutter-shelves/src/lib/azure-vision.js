@@ -12,7 +12,7 @@ export async function analyzeImageWithAzure(imageBase64) {
   const byteArray = new Uint8Array(byteNumbers);
   const blob = new Blob([byteArray], { type: 'image/jpeg' });
 
-  const res = await fetch(AZURE_VISION_ENDPOINT + 'vision/v4.0/analyze?visualFeatures=Description,Tags', {
+  const res = await fetch(AZURE_VISION_ENDPOINT + '?visualFeatures=Description,Tags', {
     method: 'POST',
     headers: {
       'Ocp-Apim-Subscription-Key': AZURE_API_KEY,
