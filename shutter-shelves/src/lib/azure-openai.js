@@ -1,9 +1,8 @@
 // src/lib/azure-openai.js
 // Use OpenAI GPT-4 Turbo for recipe generation (OpenAI, not Azure)
-const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
-const API_VERSION = 'v1';
-
-export async function getRecipesFromOpenAI(items) {
+// Accept env as parameter for credentials
+export async function getRecipesFromOpenAI(items, env) {
+  const OPENAI_API_KEY = env?.VITE_OPENAI_API_KEY;
   const url = 'https://api.openai.com/v1/chat/completions';
   const prompt = `Given ONLY these pantry ingredients (as a JSON array):\n${JSON.stringify(items)}\n\nSuggest up to five recipes. For each recipe, provide:\n- Title\n- Full list of ingredients (must be a subset of the pantry ingredients, do not add anything extra)\n- Step-by-step instructions\n\nReturn your answer as a JSON array of objects, each with 'title', 'ingredients' (array), and 'steps' (array of strings). Only output the array.`;
   const body = {

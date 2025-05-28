@@ -1,9 +1,10 @@
 // src/lib/azure-vision.js
 // Use Azure Computer Vision for image analysis
-const AZURE_VISION_ENDPOINT = (import.meta.env.VITE_AZURE_VISION_ENDPOINT || '').replace(/\/?$/, '/'); // Always ends with /
-const AZURE_VISION_KEY = import.meta.env.VITE_AZURE_VISION_KEY;
+// Accept env as parameter for credentials
+export async function analyzeImageWithAzure(imageBase64, env) {
+  const AZURE_VISION_ENDPOINT = (env?.VITE_AZURE_VISION_ENDPOINT || '').replace(/\/?$/, '/'); // Always ends with /
+  const AZURE_VISION_KEY = env?.VITE_AZURE_VISION_KEY;
 
-export async function analyzeImageWithAzure(imageBase64) {
   // Azure expects binary, so convert base64 to blob
   const byteCharacters = atob(imageBase64);
   const byteNumbers = new Array(byteCharacters.length);
