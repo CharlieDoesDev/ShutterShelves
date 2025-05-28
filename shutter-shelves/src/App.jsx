@@ -31,7 +31,16 @@ export default function App() {
   async function handleAzureVision(imageBase64, append) {
     try {
       const visionResult = await analyzeImageWithAzure(imageBase64);
-      const items = visionResult.tags?.map(t => t.name) || [];
+      // Parse the JSON array from the model's response
+      let items = [];
+      try {
+        const content = visionResult.choices?.[0]?.message?.content || "[]";
+        items = JSON.parse(
+          content.slice(content.indexOf("["), content.lastIndexOf("]") + 1)
+        );
+      } catch (e) {
+        items = [];
+      }
       handleItemsIdentified(items, append);
       const recipes = await getTopRecipes(items);
       handleRecipesGenerated(recipes, append);
