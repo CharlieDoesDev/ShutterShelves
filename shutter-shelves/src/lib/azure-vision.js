@@ -1,5 +1,5 @@
 // src/lib/azure-vision.js
-const AZURE_VISION_ENDPOINT = 'https://shuttershelvesvision.cognitiveservices.azure.com/vision/v4.0/analyze';
+const AZURE_VISION_ENDPOINT = 'https://shuttershelvesvision.cognitiveservices.azure.com/';
 const AZURE_API_KEY = import.meta.env.VITE_AZURE_VISION_KEY;
 
 export async function analyzeImageWithAzure(imageBase64) {
