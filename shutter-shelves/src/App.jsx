@@ -19,7 +19,7 @@ export default function App() {
   useEffect(() => {
     async function fetchAndDecryptEnv() {
       try {
-        const res = await fetch('/config.env.enc');
+        const res = await fetch(import.meta.env.BASE_URL + 'config.env.enc');
         if (!res.ok) throw new Error('Failed to fetch encrypted env');
         const enc = await res.arrayBuffer();
         // TODO: Implement decryptEnv to return a JS object from ArrayBuffer
