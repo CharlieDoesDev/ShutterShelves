@@ -2,6 +2,11 @@ import React, { useState } from 'react';
 import ImageUploader from './components/ImageUploader';
 import PantryResults from './components/PantryResults';
 import RecipeRecommendations from './components/RecipeRecommendations';
+import { getTopRecipes } from '../lib/openai';
+import { analyzeImageWithAzure } from './lib/azure-vision';
+
+const AZURE_VISION_ENDPOINT = 'https://shuttershelvesvision.cognitiveservices.azure.com/vision/v4.0/analyze';
+const AZURE_API_KEY = import.meta.env.VITE_AZURE_VISION_KEY;
 
 export default function App() {
   const [items, setItems] = useState([]);
@@ -22,6 +27,17 @@ export default function App() {
       setRecipes((prev) => [...prev, ...newRecipes]);
     } else {
       setRecipes(newRecipes);
+    }
+  }
+  async function handleAzureVision(imageBase64, append) {
+    try {
+      const visionResult = await analyzeImageWithAzure(imageBase64);
+      const items = visionResult.tags?.map(t => t.name) || [];
+      handleItemsIdentified(items, append);
+      const recipes = await getTopRecipes(items);
+      handleRecipesGenerated(recipes, append);
+    } catch (err) {
+      console.error(err);
     }
   }
   function handleReset() {
@@ -47,6 +63,7 @@ export default function App() {
             onRecipesGenerated={handleRecipesGenerated}
             onReset={handleReset}
             appendMode={appendMode}
+            onAzureVision={handleAzureVision}
           />
         ) : (
           <div className="flex flex-col items-center w-full px-2 pt-2 pb-8">
