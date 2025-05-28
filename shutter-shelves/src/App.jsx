@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import ImageUploader from './components/ImageUploader';
 import PantryResults from './components/PantryResults';
 import RecipeRecommendations from './components/RecipeRecommendations';
-import { getTopRecipes } from '../lib/openai';
 import { analyzeImageWithAzure } from './lib/azure-vision';
 
 const AZURE_VISION_ENDPOINT = 'https://shuttershelvesvision.cognitiveservices.azure.com/vision/v4.0/analyze';
