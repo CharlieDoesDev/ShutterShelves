@@ -3,59 +3,42 @@ import ImageUploader from './components/ImageUploader';
 import PantryResults from './components/PantryResults';
 import RecipeRecommendations from './components/RecipeRecommendations';
 import { analyzeImageWithAzure } from './lib/azure-vision';
-
-const AZURE_VISION_ENDPOINT = 'https://shuttershelvesvision.cognitiveservices.azure.com/vision/v4.0/analyze';
-const AZURE_API_KEY = import.meta.env.VITE_AZURE_VISION_KEY;
+import { getRecipesFromOpenAI } from './lib/azure-openai';
 
 export default function App() {
   const [items, setItems] = useState([]);
   const [recipes, setRecipes] = useState([]);
-  const [imageHistory, setImageHistory] = useState([]);
   const [appendMode, setAppendMode] = useState(false);
   const [showUploader, setShowUploader] = useState(true);
 
-  function handleItemsIdentified(newItems, append) {
-    if (append) {
-      setItems((prev) => [...prev, ...newItems]);
-    } else {
-      setItems(newItems);
-    }
-  }
-  function handleRecipesGenerated(newRecipes, append) {
-    if (append) {
-      setRecipes((prev) => [...prev, ...newRecipes]);
-    } else {
-      setRecipes(newRecipes);
-    }
-  }
   async function handleAzureVision(imageBase64, append) {
     try {
       const visionResult = await analyzeImageWithAzure(imageBase64);
-      // Parse the JSON array from the model's response
-      let items = [];
+      // Use tags as pantry items
+      const itemsExtracted = visionResult.tags?.map((t) => t.name) || [];
+      setItems(append ? (prev) => [...prev, ...itemsExtracted] : itemsExtracted);
+      // Get recipes from OpenAI
+      const recipeResult = await getRecipesFromOpenAI(itemsExtracted);
+      let recipesArr = [];
       try {
-        const content = visionResult.choices?.[0]?.message?.content || "[]";
-        items = JSON.parse(
-          content.slice(content.indexOf("["), content.lastIndexOf("]") + 1)
+        const content = recipeResult.choices?.[0]?.message?.content || '[]';
+        recipesArr = JSON.parse(
+          content.slice(content.indexOf('['), content.lastIndexOf(']') + 1)
         );
       } catch (e) {
-        items = [];
+        recipesArr = [];
       }
-      handleItemsIdentified(items, append);
-      const recipes = await getTopRecipes(items);
-      handleRecipesGenerated(recipes, append);
+      setRecipes(append ? (prev) => [...prev, ...recipesArr] : recipesArr);
     } catch (err) {
       console.error(err);
     }
   }
+
   function handleReset() {
     setItems([]);
     setRecipes([]);
     setShowUploader(true);
     setAppendMode(false);
-  }
-  function handlePhotoTaken() {
-    setShowUploader(false);
   }
   function handleAppend() {
     setAppendMode(true);
@@ -67,8 +50,6 @@ export default function App() {
       <div className="flex-1 flex flex-col overflow-y-auto">
         {showUploader ? (
           <ImageUploader
-            onItemsIdentified={handleItemsIdentified}
-            onRecipesGenerated={handleRecipesGenerated}
             onReset={handleReset}
             appendMode={appendMode}
             onAzureVision={handleAzureVision}
