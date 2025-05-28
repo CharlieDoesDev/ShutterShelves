@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ImageUploader from './components/ImageUploader';
 import PantryResults from './components/PantryResults';
 import RecipeRecommendations from './components/RecipeRecommendations';
@@ -6,35 +6,43 @@ import { analyzeImageWithAzure } from './lib/azure-vision';
 import { getRecipesFromOpenAI } from './lib/azure-openai';
 
 export default function App() {
-  // Authentication state
-  const [passwordInput, setPasswordInput] = useState('');
-  const [authenticated, setAuthenticated] = useState(false);
-
   // App state
   const [items, setItems] = useState([]);
   const [recipes, setRecipes] = useState([]);
   const [appendMode, setAppendMode] = useState(false);
   const [showUploader, setShowUploader] = useState(true);
+  const [env, setEnv] = useState(null);
+  const [loadingEnv, setLoadingEnv] = useState(true);
+  const [envError, setEnvError] = useState(null);
 
-  // Hardcoded or env-based expected password
-  const EXPECTED_PASSWORD = process.env.REACT_APP_ACCESS_PASSWORD || 'secret';
-
-  const handleLogin = () => {
-    if (passwordInput === EXPECTED_PASSWORD) {
-      setAuthenticated(true);
-    } else {
-      alert('🔒 Incorrect password. Try again.');
-      setPasswordInput('');
+  // Fetch and decrypt env on mount
+  useEffect(() => {
+    async function fetchAndDecryptEnv() {
+      try {
+        const res = await fetch('/config.env.enc');
+        if (!res.ok) throw new Error('Failed to fetch encrypted env');
+        const enc = await res.arrayBuffer();
+        // TODO: Implement decryptEnv to return a JS object from ArrayBuffer
+        const decrypted = await decryptEnv(enc); // You must implement this function
+        setEnv(decrypted);
+        setLoadingEnv(false);
+      } catch (err) {
+        setEnvError(err.message);
+        setLoadingEnv(false);
+      }
     }
-  };
+    fetchAndDecryptEnv();
+  }, []);
 
   async function handleAzureVision(imageBase64, append) {
     try {
-      const visionResult = await analyzeImageWithAzure(imageBase64);
+      if (!env) throw new Error('Environment not loaded');
+      // Pass env to your API functions as needed
+      const visionResult = await analyzeImageWithAzure(imageBase64, env);
       const itemsExtracted = visionResult.tags?.map((t) => t.name) || [];
       setItems(append ? (prev) => [...prev, ...itemsExtracted] : itemsExtracted);
 
-      const recipeResult = await getRecipesFromOpenAI(itemsExtracted);
+      const recipeResult = await getRecipesFromOpenAI(itemsExtracted, env);
       let recipesArr = [];
       try {
         const content = recipeResult.choices?.[0]?.message?.content || '[]';
@@ -61,28 +69,11 @@ export default function App() {
     setShowUploader(true);
   }
 
-  // Render login prompt if not authenticated
-  if (!authenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f8fafc] to-[#e0e7ef]">
-        <div className="bg-white p-8 rounded-lg shadow-lg">
-          <h2 className="text-2xl font-semibold mb-4">Enter Access Password</h2>
-          <input
-            type="password"
-            value={passwordInput}
-            onChange={(e) => setPasswordInput(e.target.value)}
-            className="w-full px-3 py-2 border rounded mb-4"
-            placeholder="Password"
-          />
-          <button
-            onClick={handleLogin}
-            className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
-          >
-            Unlock
-          </button>
-        </div>
-      </div>
-    );
+  if (loadingEnv) {
+    return <div className="min-h-screen flex items-center justify-center">Loading configuration...</div>;
+  }
+  if (envError) {
+    return <div className="min-h-screen flex items-center justify-center text-red-500">{envError}</div>;
   }
 
   // Main app UI
@@ -94,6 +85,7 @@ export default function App() {
             onReset={handleReset}
             appendMode={appendMode}
             onAzureVision={handleAzureVision}
+            env={env}
           />
         ) : (
           <div className="flex flex-col items-center w-full px-2 pt-2 pb-8">
@@ -121,4 +113,14 @@ export default function App() {
       </div>
     </div>
   );
+}
+
+// Simple demo: assumes config.env.enc is base64-encoded JSON
+async function decryptEnv(encBuffer) {
+  // Convert ArrayBuffer to string
+  const b64 = btoa(String.fromCharCode(...new Uint8Array(encBuffer)));
+  // Decode base64 to JSON string
+  const jsonStr = atob(b64);
+  // Parse JSON
+  return JSON.parse(jsonStr);
 }
