@@ -50,8 +50,10 @@ export default function App() {
       const recipeResult = await getRecipesFromOpenAI(itemsExtracted, env);
       // recipeResult: { completion: string }
       setRecipes([recipeResult.completion]);
+      setEnvError(null); // Clear any previous error
     } catch (err) {
-      setEnvError(err.message || 'An error occurred.');
+      // Show a generic error message, not OpenAI-specific
+      setEnvError('A problem occurred while generating recipes. Please wait and try again.');
       console.error(err);
     }
   }
