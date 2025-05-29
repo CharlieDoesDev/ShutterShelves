@@ -134,6 +134,26 @@ Description:
           headers: { "Content-Type": "application/json" },
         }));
       }
+      else if (path === "/openai") {
+        // Proxy OpenAI chat completion request
+        const body = await request.json();
+        const openaiRes = await fetch(
+          "https://api.openai.com/v1/chat/completions",
+          {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${env.OPENAI_API_KEY || env.VITE_OPENAI_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(body),
+          }
+        );
+        const text = await openaiRes.text();
+        return withCors(new Response(text, {
+          status: openaiRes.status,
+          headers: { "Content-Type": "application/json" },
+        }));
+      }
       else {
         return withCors(new Response("Not Found", { status: 404 }));
       }
