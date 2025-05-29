@@ -135,22 +135,40 @@ Description:
         }));
       }
       else if (path === "/openai") {
-        // Proxy OpenAI chat completion request
+        // Proxy Gemini chat completion request instead of OpenAI
         const body = await request.json();
-        const openaiRes = await fetch(
-          "https://api.openai.com/v1/chat/completions",
+        // Expecting: { model, messages, max_tokens }
+        const userMessage = body.messages?.[0]?.content || "";
+        const geminiRes = await fetch(
+          "https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=" + env.GEMINI_API_KEY,
           {
             method: "POST",
-            headers: {
-              "Authorization": `Bearer ${env.OPENAI_API_KEY || env.VITE_OPENAI_API_KEY}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(body),
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [
+                { parts: [{ text: userMessage }] }
+              ]
+            })
           }
         );
-        const text = await openaiRes.text();
-        return withCors(new Response(text, {
-          status: openaiRes.status,
+        const geminiData = await geminiRes.json();
+        // Format Gemini response to mimic OpenAI's chat completion structure
+        const text = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        const fakeOpenAIResponse = {
+          id: "gemini-chat-fake",
+          object: "chat.completion",
+          created: Math.floor(Date.now() / 1000),
+          model: "gemini-2.0-flash",
+          choices: [
+            {
+              index: 0,
+              message: { role: "assistant", content: text },
+              finish_reason: "stop"
+            }
+          ]
+        };
+        return withCors(new Response(JSON.stringify(fakeOpenAIResponse), {
+          status: 200,
           headers: { "Content-Type": "application/json" },
         }));
       }
