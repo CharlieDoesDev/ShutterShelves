@@ -42,29 +42,16 @@ export default function App() {
       const itemsExtracted = visionResult.tags?.map((t) => t.name) || [];
       setItems(append ? (prev) => [...prev, ...itemsExtracted] : itemsExtracted);
 
-      // Only call OpenAI to generate recipes from the extracted items
+      // Only call Gemini to generate recipes from the extracted items
       if (itemsExtracted.length === 0) {
         setRecipes([]);
         return;
       }
       const recipeResult = await getRecipesFromOpenAI(itemsExtracted, env);
-      let recipesArr = [];
-      try {
-        const content = recipeResult.choices?.[0]?.message?.content || '[]';
-        recipesArr = JSON.parse(
-          content.slice(content.indexOf('['), content.lastIndexOf(']') + 1)
-        );
-      } catch (e) {
-        recipesArr = [];
-      }
-      setRecipes(append ? (prev) => [...prev, ...recipesArr] : recipesArr);
+      // recipeResult: { completion: string }
+      setRecipes([recipeResult.completion]);
     } catch (err) {
-      // Improved error handling for rate limits and other errors
-      if (err.message && err.message.includes('429')) {
-        setEnvError('You are sending requests too quickly or have exceeded your OpenAI quota. Please wait and try again.');
-      } else {
-        setEnvError(err.message || 'An error occurred.');
-      }
+      setEnvError(err.message || 'An error occurred.');
       console.error(err);
     }
   }

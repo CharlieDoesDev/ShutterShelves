@@ -94,12 +94,13 @@ Description:
         }));
       }
       else if (path === "/recipes") {
-        // Recommend recipes from item list using Gemini
+        // Recommend recipes from item list using Gemini (completion, not JSON parsing)
         const { items } = await request.json();
         if (!Array.isArray(items)) {
           return withCors(new Response("Missing items array", { status: 400 }));
         }
-        const prompt = `Given ONLY these pantry ingredients (as a JSON array):\n${JSON.stringify(items)}\n\nSuggest up to five recipes. For each recipe, provide:\n- Title\n- Full list of ingredients (must be a subset of the pantry ingredients, do not add anything extra)\n- Step-by-step instructions\n\nReturn your answer as a JSON array of objects, each with 'title', 'ingredients' (array), and 'steps' (array of strings).`;
+        // Use Gemini to generate a natural language completion for recipes
+        const prompt = `Given ONLY these pantry ingredients (as a JSON array):\n${JSON.stringify(items)}\n\nSuggest up to five recipes. For each recipe, provide:\n- Title\n- Full list of ingredients (must be a subset of the pantry ingredients, do not add anything extra)\n- Step-by-step instructions`;
         const geminiTextRes = await fetch(
           "https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=" + env.GEMINI_API_KEY,
           {
@@ -117,19 +118,9 @@ Description:
           return withCors(new Response(`Recipe-gen error ${geminiTextRes.status}: ${err}`, { status: 502 }));
         }
         const textData = await geminiTextRes.json();
-        const generated = textData.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
-        let recipes = [];
-        try {
-          recipes = JSON.parse(
-            generated.slice(
-              generated.indexOf("["),
-              generated.lastIndexOf("]") + 1
-            )
-          );
-        } catch (e) {
-          recipes = [];
-        }
-        return withCors(new Response(JSON.stringify(recipes), {
+        const completion = textData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        // Return the completion as a string (not parsed JSON)
+        return withCors(new Response(JSON.stringify({ completion }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
         }));
