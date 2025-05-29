@@ -41,6 +41,7 @@ export default function App() {
       const visionResult = await analyzeImageWithAzure(imageBase64, env);
       const itemsExtracted = visionResult.tags?.map((t) => t.name) || [];
       setItems(append ? (prev) => [...prev, ...itemsExtracted] : itemsExtracted);
+      console.log('Extracted items:', itemsExtracted);
 
       // Only call Gemini to generate recipes from the extracted items
       if (itemsExtracted.length === 0) {
@@ -48,7 +49,7 @@ export default function App() {
         return;
       }
       const recipeResult = await getRecipesFromOpenAI(itemsExtracted, env);
-      // recipeResult: { completion: string }
+      console.log('Gemini recipe completion:', recipeResult);
       setRecipes([recipeResult.completion]);
       setEnvError(null); // Clear any previous error
     } catch (err) {
