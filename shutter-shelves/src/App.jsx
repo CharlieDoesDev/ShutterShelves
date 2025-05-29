@@ -37,11 +37,16 @@ export default function App() {
   async function handleAzureVision(imageBase64, append) {
     try {
       if (!env) throw new Error('Environment not loaded');
-      // Pass env to your API functions as needed
+      // Only call Azure Vision to extract items from the image
       const visionResult = await analyzeImageWithAzure(imageBase64, env);
       const itemsExtracted = visionResult.tags?.map((t) => t.name) || [];
       setItems(append ? (prev) => [...prev, ...itemsExtracted] : itemsExtracted);
 
+      // Only call OpenAI to generate recipes from the extracted items
+      if (itemsExtracted.length === 0) {
+        setRecipes([]);
+        return;
+      }
       const recipeResult = await getRecipesFromOpenAI(itemsExtracted, env);
       let recipesArr = [];
       try {
@@ -54,6 +59,12 @@ export default function App() {
       }
       setRecipes(append ? (prev) => [...prev, ...recipesArr] : recipesArr);
     } catch (err) {
+      // Improved error handling for rate limits and other errors
+      if (err.message && err.message.includes('429')) {
+        setEnvError('You are sending requests too quickly or have exceeded your OpenAI quota. Please wait and try again.');
+      } else {
+        setEnvError(err.message || 'An error occurred.');
+      }
       console.error(err);
     }
   }
