@@ -10,6 +10,7 @@ import {
   generateRecipes,
 } from "./lib/Util.js";
 import CookbookButton from "./components/SimpleElements/CookbookButton";
+import SlideInLogo from "./components/SimpleElements/SlideInLogo";
 
 // Mode constants
 const MODE_IDLE = "idle";
