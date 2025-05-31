@@ -1,0 +1,22 @@
+/* CameraWindow.css - styles for the camera window component */
+.camera-window {
+  text-align: center;
+  padding: 2rem 1rem;
+}
+.camera-window h2 {
+  margin-bottom: 1.5rem;
+}
+.camera-window button {
+  margin: 0 0.5rem;
+  padding: 0.5rem 1.5rem;
+  font-size: 1rem;
+  border-radius: 8px;
+  border: none;
+  background: #4f8cff;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.camera-window button:hover {
+  background: #2563eb;
+}

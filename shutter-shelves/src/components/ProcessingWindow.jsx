@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import "./ProcessingWindow.css";
 import { asyncProgressBar } from "../lib/Util.js";
 
 export default function ProcessingWindow({ onDone }) {
@@ -17,26 +18,10 @@ export default function ProcessingWindow({ onDone }) {
   }, [onDone]);
 
   return (
-    <div style={{ textAlign: "center" }}>
+    <div className="processing-window">
       <h2>Processing...</h2>
-      <div
-        style={{
-          width: 200,
-          height: 24,
-          border: "1px solid #ccc",
-          borderRadius: 8,
-          margin: "16px auto",
-        }}
-      >
-        <div
-          style={{
-            width: `${progress}%`,
-            height: "100%",
-            background: "#4f8cff",
-            borderRadius: 8,
-            transition: "width 0.2s",
-          }}
-        />
+      <div className="progress-bar">
+        <div className="progress-bar-inner" style={{ width: `${progress}%` }} />
       </div>
       <div>{progress}%</div>
     </div>

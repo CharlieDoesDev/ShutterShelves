@@ -1,4 +1,5 @@
 import React from "react";
+import "./CameraWindow.css";
 
 export default function CameraWindow({ onCapture, onCancel }) {
   // Handler for capture logic inside the component
@@ -9,7 +10,7 @@ export default function CameraWindow({ onCapture, onCancel }) {
   };
 
   return (
-    <div style={{ textAlign: "center" }}>
+    <div className="camera-window">
       <h2>Camera Window</h2>
       {/* Replace with actual camera logic or file input */}
       <button onClick={handleCaptureClick}>Capture</button>

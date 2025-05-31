@@ -1,0 +1,19 @@
+/* ProcessingWindow.css - styles for the processing window component */
+.processing-window {
+  text-align: center;
+}
+.processing-window .progress-bar {
+  width: 200px;
+  height: 24px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  margin: 16px auto;
+  background: #f3f6fa;
+  overflow: hidden;
+}
+.processing-window .progress-bar-inner {
+  height: 100%;
+  background: #4f8cff;
+  border-radius: 8px;
+  transition: width 0.2s;
+}
