@@ -48,3 +48,13 @@ export async function handleImageUpload(fileOrFiles) {
   );
   return results;
 }
+
+/**
+ * Converts a data URL to a { dataUrl, base64 } object.
+ * @param {string} dataUrl
+ * @returns {{ dataUrl: string, base64: string }}
+ */
+export function dataUrlToBase64Object(dataUrl) {
+  const base64 = dataUrl.split(",")[1];
+  return { dataUrl, base64 };
+}
