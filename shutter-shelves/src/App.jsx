@@ -10,10 +10,13 @@ import {
   generateRecipes,
 } from "./lib/Util.js";
 import CookbookButton from "./components/SimpleElements/CookbookButton";
+import CookbookView from "./components/Recipe/CookbookView";
+import RecipeView from "./components/Recipe/RecipeView";
 
 // Mode constants
 const MODE_IDLE = "idle";
-const MODE_TAKING_PICTURE = "processing";
+const MODE_TAKING_PICTURE = "taking-picture";
+const MODE_PROCESSING = "processing";
 const MODE_DISPLAY_OUTPUT = "display-output";
 const MODE_COOKBOOK = "cookbook";
 const MODE_RECIPE_VIEW = "recipe-view";
