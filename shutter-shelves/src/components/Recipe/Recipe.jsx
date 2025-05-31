@@ -1,17 +1,44 @@
 import React from "react";
 
+function extractFirstJson(str) {
+  // Try to extract the first JSON object or array from a string
+  const objMatch = str.match(/\{[\s\S]*?\}/);
+  const arrMatch = str.match(/\[[\s\S]*?\]/);
+  let jsonStr = null;
+  if (arrMatch) {
+    jsonStr = arrMatch[0];
+  } else if (objMatch) {
+    jsonStr = objMatch[0];
+  }
+  if (jsonStr) {
+    try {
+      return JSON.parse(jsonStr);
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
 export default function Recipe({ recipe, isSaved, onSave }) {
   if (!recipe) return null;
-  // If recipe is a string, try to parse as JSON
   let parsed = recipe;
+  let parseError = false;
   if (typeof recipe === "string") {
+    // Try direct JSON parse first
     try {
       parsed = JSON.parse(recipe);
     } catch {
-      parsed = { title: "Recipe", ingredients: [], steps: [recipe] };
+      // Try to extract JSON from text
+      const extracted = extractFirstJson(recipe);
+      if (extracted) {
+        parsed = extracted;
+      } else {
+        parseError = true;
+        parsed = { title: "Recipe", ingredients: [], steps: [recipe] };
+      }
     }
   }
-  // Fallbacks for missing fields
   const title = parsed.title || "Recipe";
   const ingredients = parsed.ingredients || [];
   const steps = parsed.steps || parsed.instructions || [];
@@ -47,6 +74,11 @@ export default function Recipe({ recipe, isSaved, onSave }) {
         {isSaved ? "★" : "☆"}
       </button>
       <h3 style={{ margin: 0, color: "#2563eb" }}>{title}</h3>
+      {parseError && (
+        <div style={{ color: "#b91c1c", marginBottom: 8 }}>
+          Could not parse recipe details. Showing raw text.
+        </div>
+      )}
       <div>
         <strong>Ingredients:</strong> {Array.isArray(ingredients) ? ingredients.join(", ") : String(ingredients)}
       </div>
