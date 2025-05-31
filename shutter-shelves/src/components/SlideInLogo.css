@@ -1,0 +1,14 @@
+/* SlideInLogo.css - black bar slides in from the top */
+.slide-in-logo {
+  position: fixed;
+  top: -60px;
+  left: 0;
+  width: 100vw;
+  height: 60px;
+  background: #111;
+  z-index: 1000;
+  transition: top 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.slide-in-logo--active {
+  top: 0;
+}

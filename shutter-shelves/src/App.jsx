@@ -4,6 +4,7 @@ import CenterPanel from "./components/CenterPanel";
 import CameraWindow from "./components/CameraWindow";
 import ProcessingWindow from "./components/ProcessingWindow";
 import { asyncProgressBar } from "./lib/Util.js";
+import SlideInLogo from "./components/SlideInLogo";
 
 // Mode constants
 const MODE_IDLE = "idle";
@@ -26,6 +27,7 @@ export default function App() {
 
   return (
     <div className="Container">
+      <SlideInLogo />
       {mode === MODE_IDLE && (
         <CenterPanel>
           <StyledButton onClick={() => setMode(MODE_TAKING_PICTURE)}>
