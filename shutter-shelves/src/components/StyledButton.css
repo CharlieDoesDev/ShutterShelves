@@ -31,3 +31,31 @@
   justify-content: center;
   font-size: 1.5rem;
 }
+
+.camera-btn {
+  background: linear-gradient(135deg, #3b82f6 0%, #a78bfa 100%);
+  color: #fff;
+  border-radius: 50%;
+  width: 5rem;
+  height: 5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px 0 rgba(59, 130, 246, 0.15);
+  transition: transform 0.1s;
+  padding: 0;
+}
+.camera-btn:active {
+  transform: scale(0.95);
+}
+
+.retake-btn {
+  color: #3b82f6;
+  text-decoration: underline;
+  font-size: 1rem;
+  border-radius: 0.375rem;
+  width: auto;
+  height: auto;
+  padding: 0.5rem 1rem;
+  background: transparent;
+}

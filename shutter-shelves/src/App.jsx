@@ -102,39 +102,22 @@ export default function App() {
   // Main app UI
   return (
     <div className="min-h-screen w-full relative overflow-hidden">
-      {/* Blurry food background */}
-      <div
-        className="absolute inset-0 -z-10 bg-cover bg-center blur-sm opacity-60"
-        style={{
-          backgroundImage:
-            "url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1200&q=80')",
-        }}
-        aria-hidden="true"
-      />
       <div className="min-h-screen w-full bg-gradient-to-br from-[#f8fafc] to-[#e0e7ef] flex flex-col bg-opacity-80">
-        <div className="flex-1 flex flex-col overflow-y-auto items-center justify-center">
-          <input
-            ref={inputRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            onChange={onFileChange}
-            className="hidden"
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={onFileChange}
+          className="hidden"
+        />
+        <CenterPanel>
+          <StyledButton
+            className="camera-btn mb-6 mx-auto"
+            onClick={() => inputRef.current.click()}
+            aria-label="Open Camera"
+            imagePath={image}
           />
-          <CenterPanel>
-            <StyledButton
-              className="bg-gradient-to-tr from-blue-500 to-purple-500 text-white rounded-full w-20 h-20 flex items-center justify-center shadow-lg active:scale-95 transition-all mb-6 mx-auto"
-              onClick={() => inputRef.current.click()}
-              aria-label="Open Camera"
-              style={{
-                borderRadius: "50%",
-                width: "5rem",
-                height: "5rem",
-                padding: 0,
-              }}
-              imagePath={image}
-            />
-          </CenterPanel>
           {image && (
             <div className="w-full flex flex-col items-center">
               <img
@@ -144,22 +127,15 @@ export default function App() {
                 style={{ aspectRatio: "1/1", background: "#eee" }}
               />
               <StyledButton
-                className="text-blue-500 underline text-sm mb-2"
+                className="retake-btn mb-2"
                 onClick={() => setImage(null)}
-                style={{
-                  borderRadius: "0.375rem",
-                  width: "auto",
-                  height: "auto",
-                  fontSize: "1rem",
-                  padding: "0.5rem 1rem",
-                }}
                 imagePath={null}
               >
                 Retake Photo
               </StyledButton>
             </div>
           )}
-        </div>
+        </CenterPanel>
       </div>
     </div>
   );
