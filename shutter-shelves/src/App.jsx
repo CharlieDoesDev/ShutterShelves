@@ -10,7 +10,6 @@ import {
   generateRecipes,
 } from "./lib/Util.js";
 import CookbookButton from "./components/SimpleElements/CookbookButton";
-import SlideInLogo from "./components/SimpleElements/SlideInLogo";
 
 // Mode constants
 const MODE_IDLE = "idle";
@@ -62,7 +61,6 @@ export default function App() {
     <div className="Container">
       {/* Cookbook button, always top right */}
       <CookbookButton onClick={handleViewCookbook} />
-      <SlideInLogo />
       {mode === MODE_IDLE && (
         <CenterPanel>
           <IdleWindow
