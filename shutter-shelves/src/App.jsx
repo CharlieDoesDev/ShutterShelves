@@ -12,6 +12,7 @@ import {
 import CookbookButton from "./components/SimpleElements/CookbookButton";
 import CookbookView from "./components/AppStates/CookbookView";
 import RecipeView from "./components/AppStates/RecipeView";
+import { onProcessFinished } from "./lib/AIProcessing";
 
 // Mode constants
 const MODE_IDLE = "idle";
@@ -32,37 +33,6 @@ export default function App() {
   const handleCapture = (imageData) => {
     setImages(Array.isArray(imageData) ? imageData : [imageData]);
     setMode(MODE_PROCESSING);
-  };
-
-  // Handler for Gemini processing results (from ProcessingWindow)
-  const onProcessFinished = ({
-    pantryItems,
-    recipesText,
-    images,
-    parsedRecipes: parsedRecipesFromProcessing,
-  }) => {
-    setImages(images || []);
-    // If parsedRecipesFromProcessing exists and is non-empty, use it
-    if (parsedRecipesFromProcessing && parsedRecipesFromProcessing.length > 0) {
-      setRecipes(parsedRecipesFromProcessing);
-    } else {
-      // Fallback: try to parse recipesText as JSON
-      let parsedRecipes = [];
-      try {
-        parsedRecipes = JSON.parse(recipesText);
-        if (!Array.isArray(parsedRecipes)) parsedRecipes = [parsedRecipes];
-      } catch {
-        parsedRecipes = [
-          {
-            title: "Recipes",
-            ingredients: pantryItems || [],
-            steps: [recipesText],
-          },
-        ];
-      }
-      setRecipes(parsedRecipes);
-    }
-    setMode(MODE_DISPLAY_OUTPUT);
   };
 
   // Handler for canceling camera
@@ -107,7 +77,12 @@ export default function App() {
       {mode === MODE_PROCESSING && (
         <ProcessingWindow
           images={images}
-          onProcessed={onProcessFinished}
+          onProcessed={(params) => {
+            const { images: imgs, recipes } = onProcessFinished(params);
+            setImages(imgs);
+            setRecipes(recipes);
+            setMode(MODE_DISPLAY_OUTPUT);
+          }}
           onDone={() => {}}
         />
       )}
