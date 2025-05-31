@@ -68,3 +68,32 @@ export async function onFileChange(
   setImages((prev) => [...prev, ...withAnalysis]);
   e.target.value = "";
 }
+
+// Simulate an async progress bar for demo purposes
+export async function asyncProgressBar(onProgress) {
+  let progress = 0;
+  while (progress < 100) {
+    await new Promise((resolve) =>
+      setTimeout(resolve, 30 + Math.random() * 70)
+    );
+    progress += Math.floor(Math.random() * 10) + 1;
+    if (progress > 100) progress = 100;
+    onProgress(progress);
+  }
+  return true;
+}
+
+// Simulate an async image processing request with progress callback
+export async function DemoImageRequest(images, onProgress) {
+  let progress = 0;
+  const steps = 10;
+  for (let i = 1; i <= steps; i++) {
+    await new Promise((resolve) =>
+      setTimeout(resolve, 100 + Math.random() * 200)
+    );
+    progress = Math.round((i / steps) * 100);
+    onProgress(progress);
+  }
+  // Simulate processed images result (could be modified images, analysis, etc.)
+  return images.map((img, idx) => ({ ...img, processed: true, id: idx }));
+}

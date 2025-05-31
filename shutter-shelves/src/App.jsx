@@ -1,14 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import StyledButton from "./components/StyledButton";
 import CenterPanel from "./components/CenterPanel";
-import { InitiateImages } from "./lib/App.js";
-import {
-  generateAnalysis,
-  generateRecipes,
-  removeImage,
-  handleReset,
-  onFileChange,
-} from "./lib/Util.js";
+import CameraWindow from "./components/CameraWindow";
+import ProcessingWindow from "./components/ProcessingWindow";
+import { asyncProgressBar } from "./lib/Util.js";
 
 // Mode constants
 const MODE_IDLE = "idle";
@@ -19,17 +14,30 @@ export default function App() {
   const [images, setImages] = useState([]);
   const [mode, setMode] = useState(MODE_IDLE);
 
+  // Handler for when a picture is captured
+  const handleCapture = (imageData) => {
+    setImages((prev) => [...prev, imageData]);
+    setMode(MODE_PROCESSING);
+  };
+
+  // Handler for canceling camera
+  const handleCancel = () => setMode(MODE_IDLE);
+  const handleProcessingDone = () => setMode(MODE_IDLE);
+
   return (
     <div className="App">
       <CenterPanel>
-        {/* Example usage of mode constants */}
         {mode === MODE_IDLE && (
           <StyledButton onClick={() => setMode(MODE_TAKING_PICTURE)}>
             Start
           </StyledButton>
         )}
-        {mode === MODE_TAKING_PICTURE && <div>Picture Taking Mode</div>}
-        {mode === MODE_PROCESSING && <div>Processing...</div>}
+        {mode === MODE_TAKING_PICTURE && (
+          <CameraWindow onCapture={handleCapture} onCancel={handleCancel} />
+        )}
+        {mode === MODE_PROCESSING && (
+          <ProcessingWindow onDone={handleProcessingDone} />
+        )}
       </CenterPanel>
     </div>
   );
