@@ -4,16 +4,13 @@ import { handleImageUpload } from "./lib/imageUploader";
 import CenterPanel from "./components/CenterPanel";
 
 export default function App() {
-  // State for uploaded images (array of { dataUrl, base64, analysis, recipes })
   const [images, setImages] = useState([]);
   const inputRef = useRef();
 
-  // Handle file input change (multi-upload supported)
   async function onFileChange(e) {
     const files = Array.from(e.target.files);
     if (!files.length) return;
     const newImages = await handleImageUpload(files);
-    // For each image, generate placeholder analysis and recipes
     const withAnalysis = newImages.map((img) => {
       const analysis = generateAnalysis();
       return {
@@ -23,21 +20,17 @@ export default function App() {
       };
     });
     setImages((prev) => [...prev, ...withAnalysis]);
-    // Reset input value so the same file can be uploaded again if needed
     e.target.value = "";
   }
 
-  // Remove an image by index
   function removeImage(idx) {
     setImages((prev) => prev.filter((_, i) => i !== idx));
   }
 
-  // Reset all images
   function handleReset() {
     setImages([]);
   }
 
-  // Placeholder analysis generator
   function generateAnalysis() {
     const items = [
       "canned beans",
@@ -49,12 +42,10 @@ export default function App() {
       "rice",
       "spices",
     ];
-    // Randomly select 3-6 items
     const count = Math.floor(Math.random() * 4) + 3;
     return items.sort(() => 0.5 - Math.random()).slice(0, count);
   }
 
-  // Placeholder recipe generator
   function generateRecipes(analysis) {
     return [
       {
@@ -70,10 +61,15 @@ export default function App() {
     ];
   }
 
-  // Main app UI
   return (
-    <div className="center-panel-parent relative overflow-hidden">
-      <CenterPanel>
+    <div
+      className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-100 font-sans"
+      style={{ minHeight: "100dvh" }}
+    >
+      <div
+        className="backdrop-blur-lg bg-white/60 rounded-3xl shadow-2xl border border-white/40 p-6 flex flex-col items-center w-full max-w-sm mx-2"
+        style={{ boxShadow: "0 8px 32px 0 rgba(31, 38, 135, 0.18)" }}
+      >
         <input
           ref={inputRef}
           type="file"
@@ -83,20 +79,26 @@ export default function App() {
           onChange={onFileChange}
           className="hidden"
         />
-        <StyledButton
-          className="camera-btn mb-6 mx-auto"
+        <button
+          className="relative w-28 h-28 rounded-full bg-gradient-to-br from-blue-400 to-purple-400 shadow-lg flex items-center justify-center mb-6 transition-transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-200"
           onClick={() => inputRef.current.click()}
           aria-label="Open Camera"
-          imagePath={null}
         >
-          {images.length === 0 ? "Upload/Take Photo(s)" : "Add More"}
-        </StyledButton>
+          <span className="text-white text-lg font-bold drop-shadow-lg text-center px-2">
+            {images.length === 0 ? "Upload/Take\nPhoto(s)" : "Add More"}
+          </span>
+        </button>
+        {images.length === 0 && (
+          <div className="text-gray-500 text-center mb-2 text-base">
+            Snap or upload one or more pantry photos to get instant recipe ideas!
+          </div>
+        )}
         {images.length > 0 && (
-          <div className="w-full flex flex-col items-center gap-8 mt-4">
+          <div className="w-full flex flex-col items-center gap-8 mt-2">
             {images.map((img, idx) => (
               <div
                 key={idx}
-                className="w-full max-w-xs flex flex-col items-center bg-white bg-opacity-80 rounded-xl shadow-lg p-4 mb-4"
+                className="w-full max-w-xs flex flex-col items-center bg-white/90 rounded-2xl shadow-md p-4 mb-2 border border-gray-100"
               >
                 <img
                   src={img.dataUrl}
@@ -109,30 +111,25 @@ export default function App() {
                   onClick={() => removeImage(idx)}
                   style={{
                     borderRadius: "0.375rem",
-                    width: "auto",
-                    height: "auto",
                     fontSize: "0.9rem",
                     padding: "0.25rem 0.5rem",
                   }}
                 >
                   Remove
                 </button>
-                <div className="mb-2">
-                  <strong>Identified Items:</strong>
-                  <ul className="list-disc list-inside mt-1">
+                <div className="mb-2 w-full">
+                  <strong className="text-gray-700">Identified Items:</strong>
+                  <ul className="list-disc list-inside mt-1 text-gray-600 text-sm">
                     {img.analysis.map((it, i) => (
                       <li key={i}>{it}</li>
                     ))}
                   </ul>
                 </div>
-                <div>
-                  <strong>Recipes:</strong>
-                  <ol className="list-decimal list-inside mt-1 space-y-2">
+                <div className="w-full">
+                  <strong className="text-gray-700">Recipes:</strong>
+                  <ol className="list-decimal list-inside mt-1 space-y-2 text-gray-700 text-sm">
                     {img.recipes.map((r, i) => (
-                      <li
-                        key={i}
-                        className="border rounded p-2 bg-gray-50"
-                      >
+                      <li key={i} className="border rounded p-2 bg-gray-50">
                         <div className="font-bold">{r.title}</div>
                         <div>
                           <span className="font-semibold">Ingredients:</span>
@@ -157,12 +154,10 @@ export default function App() {
               </div>
             ))}
             <button
-              className="text-blue-500 underline text-sm mb-2"
+              className="text-blue-500 underline text-sm mb-2 mt-2"
               onClick={handleReset}
               style={{
                 borderRadius: "0.375rem",
-                width: "auto",
-                height: "auto",
                 fontSize: "1rem",
                 padding: "0.5rem 1rem",
               }}
@@ -171,7 +166,7 @@ export default function App() {
             </button>
           </div>
         )}
-      </CenterPanel>
+      </div>
     </div>
   );
 }
