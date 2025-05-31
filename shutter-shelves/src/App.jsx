@@ -10,7 +10,7 @@ import {
   generateRecipes,
 } from "./lib/Util.js";
 import CookbookButton from "./components/SimpleElements/CookbookButton";
-import CookbookView from "./components/Recipe/CookbookView";
+import CookbookView from "./components/AppStates/CookbookView";
 import RecipeView from "./components/Recipe/RecipeView";
 
 // Mode constants
