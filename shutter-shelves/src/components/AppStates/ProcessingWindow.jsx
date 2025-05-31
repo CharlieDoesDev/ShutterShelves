@@ -12,35 +12,27 @@ export default function ProcessingWindow({ images, onDone, onProcessed }) {
       await asyncProgressBar((p) => {
         if (!cancelled) setProgress(p);
       });
-      // After progress bar, call Gemini API
+      // After progress bar, call Gemini API via proxy
       try {
         const { dataUrlToBase64Object } = await import("../../lib/imageUploader");
         const PROXY = "https://pantry-pilot-proxy.shuttershells.workers.dev";
         const base64Array = images.map(photo => dataUrlToBase64Object(photo.dataUrl).base64);
         // Refined prompt for Gemini Vision
         const visionPrompt = `You are a kitchen assistant. Describe this image in detail, focusing on identifying all visible food, pantry, or kitchen items. If the image does not contain any food, pantry, or kitchen items, say: 'No food, pantry, or kitchen items detected.'`;
-        // Get captions for all images
+        // Get captions for all images via proxy
         const captions = [];
         for (const base64 of base64Array) {
           const res = await fetch(
-            `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=API_KEY_PLACEHOLDER`,
+            `${PROXY}/vision`,
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                contents: [
-                  {
-                    parts: [
-                      { text: visionPrompt },
-                      { inline_data: { mime_type: "image/jpeg", data: base64 } }
-                    ]
-                  }
-                ]
-              })
+              body: JSON.stringify({ prompt: visionPrompt, imageBase64: base64 })
             }
           );
+          if (!res.ok) throw new Error("Gemini Vision error: " + res.status);
           const data = await res.json();
-          const caption = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+          const caption = data.caption || data.result || data.text || "";
           captions.push(caption);
         }
         // If any caption says no food/pantry/kitchen, warn and abort
