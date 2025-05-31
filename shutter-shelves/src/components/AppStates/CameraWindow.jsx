@@ -1,9 +1,9 @@
 import React, { useRef, useEffect, useState } from "react";
 import "./CameraWindow.css";
-import CameraCounter from "./CameraWindowComponents/CameraCounter";
-import CameraCaptureButton from "./CameraWindowComponents/CameraCaptureButton";
-import FinishPhotosButton from "./CameraWindowComponents/FinishPhotosButton";
-import PhotoGrid from "./CameraWindowComponents/PhotoGrid";
+import CameraCounter from "../CameraWindowComponents/CameraCounter";
+import CameraCaptureButton from "../CameraWindowComponents/CameraCaptureButton";
+import FinishPhotosButton from "../CameraWindowComponents/FinishPhotosButton";
+import PhotoGrid from "../CameraWindowComponents/PhotoGrid";
 
 export default function CameraWindow({ onCapture, onCancel, onProcess }) {
   const videoRef = useRef(null);
@@ -18,7 +18,9 @@ export default function CameraWindow({ onCapture, onCancel, onProcess }) {
     if (showGrid) return;
     async function startCamera() {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+        });
         streamRef.current = stream;
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
@@ -103,7 +105,7 @@ export default function CameraWindow({ onCapture, onCancel, onProcess }) {
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
-    overflow: "hidden"
+    overflow: "hidden",
   };
 
   const buttonStyle = {
@@ -122,14 +124,14 @@ export default function CameraWindow({ onCapture, onCancel, onProcess }) {
     whiteSpace: "normal",
     wordBreak: "break-word",
     textAlign: "center",
-    lineHeight: 1.2
+    lineHeight: 1.2,
   };
 
   const cancelButtonStyle = {
     ...buttonStyle,
     background: "#e5e7eb",
     color: "#374151",
-    marginTop: 16
+    marginTop: 16,
   };
 
   // --- Grid view ---
@@ -137,13 +139,41 @@ export default function CameraWindow({ onCapture, onCancel, onProcess }) {
     return (
       <div style={cameraWindowStyle}>
         <div className="camera-window" style={{ ...cardStyle, minHeight: 520 }}>
-          <h2 style={{ marginBottom: 8, fontWeight: 700, fontSize: 22 }}>Select Photos</h2>
-          <div style={{ width: "100%", maxHeight: 320, overflowY: "auto", marginBottom: 16 }}>
-            <PhotoGrid photos={photos} selected={selected} onToggle={handleToggle} buttonStyle={buttonStyle} />
+          <h2 style={{ marginBottom: 8, fontWeight: 700, fontSize: 22 }}>
+            Select Photos
+          </h2>
+          <div
+            style={{
+              width: "100%",
+              maxHeight: 320,
+              overflowY: "auto",
+              marginBottom: 16,
+            }}
+          >
+            <PhotoGrid
+              photos={photos}
+              selected={selected}
+              onToggle={handleToggle}
+              buttonStyle={buttonStyle}
+            />
           </div>
-          <div style={{ display: "flex", gap: 12, marginTop: 12, width: "100%", justifyContent: "center" }}>
-            <button style={cancelButtonStyle} onClick={handleCancelGrid}>Back</button>
-            <button style={buttonStyle} onClick={handleProcess} disabled={selected.length === 0}>
+          <div
+            style={{
+              display: "flex",
+              gap: 12,
+              marginTop: 12,
+              width: "100%",
+              justifyContent: "center",
+            }}
+          >
+            <button style={cancelButtonStyle} onClick={handleCancelGrid}>
+              Back
+            </button>
+            <button
+              style={buttonStyle}
+              onClick={handleProcess}
+              disabled={selected.length === 0}
+            >
               Process Selected
             </button>
           </div>
@@ -157,13 +187,27 @@ export default function CameraWindow({ onCapture, onCancel, onProcess }) {
     <div style={cameraWindowStyle}>
       <div className="camera-window" style={cardStyle}>
         <CameraCounter count={photos.length} />
-        <video ref={videoRef} autoPlay playsInline style={{ width: "100%", borderRadius: 18, marginBottom: 18, background: "#e5e7eb" }} />
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          style={{
+            width: "100%",
+            borderRadius: 18,
+            marginBottom: 18,
+            background: "#e5e7eb",
+          }}
+        />
         <canvas ref={canvasRef} style={{ display: "none" }} />
-        <div style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <button
-            style={buttonStyle}
-            onClick={handleCaptureClick}
-          >
+        <div
+          style={{
+            width: "100%",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+          }}
+        >
+          <button style={buttonStyle} onClick={handleCaptureClick}>
             Capture Photo
           </button>
           {photos.length > 0 && (
@@ -174,7 +218,9 @@ export default function CameraWindow({ onCapture, onCancel, onProcess }) {
               Finish Taking Photos
             </button>
           )}
-          <button style={cancelButtonStyle} onClick={onCancel}>Cancel</button>
+          <button style={cancelButtonStyle} onClick={onCancel}>
+            Cancel
+          </button>
         </div>
       </div>
     </div>

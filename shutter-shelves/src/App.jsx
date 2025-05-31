@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import CenterPanel from "./components/SimpleContainers/CenterPanel";
-import CameraWindow from "./components/CameraWindow";
+import CameraWindow from "./components/AppStates/CameraWindow.jsx";
 import ProcessingWindow from "./components/AppStates/ProcessingWindow.jsx";
 import IdleWindow from "./components/AppStates/IdleWindow.jsx";
 import DisplayOutput from "./components/AppStates/DisplayOutput.jsx";
