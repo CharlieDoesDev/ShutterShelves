@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import CenterPanel from "../SimpleContainers/CenterPanel";
 import "./ProcessingWindow.css";
 import { asyncProgressBar } from "../../lib/Util.js";
 
