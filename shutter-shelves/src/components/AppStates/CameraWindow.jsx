@@ -45,7 +45,7 @@ export default function CameraWindow({ onCapture, onCancel, onProcess }) {
     async function startCamera() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
+          video: { facingMode: { ideal: "environment" } },
         });
         streamRef.current = stream;
         if (videoRef.current) {
