@@ -45,16 +45,9 @@ export default function App() {
   };
 
   // Handler for Gemini processing results (from ProcessingWindow)
-  const handleGeminiProcess = ({ pantryItems, recipesText, images }) => {
+  const handleGeminiProcess = ({ pantryItems, recipesText, images, parsedRecipes }) => {
     setImages(images || []);
-    let parsedRecipes = [];
-    try {
-      parsedRecipes = JSON.parse(recipesText);
-      if (!Array.isArray(parsedRecipes)) parsedRecipes = [parsedRecipes];
-    } catch {
-      parsedRecipes = [{ title: "Recipes", ingredients: pantryItems || [], steps: [recipesText] }];
-    }
-    setRecipes(parsedRecipes);
+    setRecipes(parsedRecipes || []);
     setMode(MODE_DISPLAY_OUTPUT);
   };
 
