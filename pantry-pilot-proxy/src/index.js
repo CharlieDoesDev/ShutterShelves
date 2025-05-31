@@ -22,43 +22,48 @@ export default {
     // 2) Dispatch based on path
     try {
       if (path === "/pantry") {
-        // Extract pantry items from image → caption via Gemini → parse JSON
-        const { imageBase64 } = await request.json();
-        if (!imageBase64) {
-          return withCors(new Response("Missing imageBase64", { status: 400 }));
+        // Bulk: Accept imagesBase64 (array) or imageBase64 (single)
+        const body = await request.json();
+        let imagesBase64 = body.imagesBase64;
+        if (!imagesBase64 && body.imageBase64) imagesBase64 = [body.imageBase64];
+        if (!Array.isArray(imagesBase64) || imagesBase64.length === 0) {
+          return withCors(new Response("Missing imagesBase64", { status: 400 }));
         }
-
-        // Gemini Vision API: Image to Caption
-        const geminiVisionRes = await fetch(
-          "https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=" + env.GEMINI_API_KEY,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              contents: [
-                {
-                  parts: [
-                    { text: "Describe this image in one sentence." },
-                    { inline_data: { mime_type: "image/jpeg", data: imageBase64 } }
-                  ]
-                }
-              ]
-            })
+        // For each image, get a caption
+        const captions = [];
+        for (const base64 of imagesBase64) {
+          const geminiVisionRes = await fetch(
+            "https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=" + env.GEMINI_API_KEY,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                contents: [
+                  {
+                    parts: [
+                      { text: "Describe this image in one sentence." },
+                      { inline_data: { mime_type: "image/jpeg", data: base64 } }
+                    ]
+                  }
+                ]
+              })
+            }
+          );
+          if (!geminiVisionRes.ok) {
+            const err = await geminiVisionRes.text();
+            return withCors(new Response(`Caption error ${geminiVisionRes.status}: ${err}`, { status: 502 }));
           }
-        );
-        if (!geminiVisionRes.ok) {
-          const err = await geminiVisionRes.text();
-          return withCors(new Response(`Caption error ${geminiVisionRes.status}: ${err}`, { status: 502 }));
+          const visionData = await geminiVisionRes.json();
+          const caption = visionData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+          captions.push(caption);
         }
-        const visionData = await geminiVisionRes.json();
-        const caption = visionData.candidates?.[0]?.content?.parts?.[0]?.text || "";
-
-        // Gemini Text API: Extract pantry items from caption
-        const prompt = `"You are an intelligent culinary assistant tasked with analyzing a photo of pantry contents. Carefully identify each visible food item, including spices, canned goods, grains, sauces, snacks, and any other visible ingredients. After accurately listing these items, generate a practical set of at least five recipes that can be made primarily using the identified pantry ingredients. Ensure recipes vary in type (e.g., snacks, meals, desserts) and clearly state any additional ingredients or basic kitchen staples (such as salt, oil, or eggs) that might be required."
+        // Merge all captions into one description
+        const mergedCaption = captions.join("\n");
+        // Gemini Text API: Extract pantry items from merged caption
+        const prompt = `"You are an intelligent culinary assistant tasked with analyzing photos of pantry contents. Carefully identify each visible food item, including spices, canned goods, grains, sauces, snacks, and any other visible ingredients. After accurately listing these items, generate a practical set of at least five recipes that can be made primarily using the identified pantry ingredients. Ensure recipes vary in type (e.g., snacks, meals, desserts) and clearly state any additional ingredients or basic kitchen staples (such as salt, oil, or eggs) that might be required."
 Return your answer as a single JSON array of strings, with each string being a specific, quantitative ingredient. Do not include any text or explanation outside the JSON array.
 
-Description:
-"${caption}"`;
+Description(s):\n"${mergedCaption}"`;
         const geminiTextRes = await fetch(
           "https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=" + env.GEMINI_API_KEY,
           {
