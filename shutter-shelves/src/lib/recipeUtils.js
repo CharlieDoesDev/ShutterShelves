@@ -29,3 +29,24 @@ export function parseRecipeInput(recipeInput) {
     };
   }
 }
+
+/**
+ * Cleans Gemini's JSON output by removing triple-backtick blocks, outer quotes, unescaping inner quotes, and removing \n.
+ * @param {string} raw - The raw string from Gemini
+ * @returns {string} - Cleaned JSON string
+ */
+export function cleanGeminiJsonString(raw) {
+  if (!raw) return raw;
+  let str = raw.trim();
+  // Remove opening and closing triple-backtick blocks
+  str = str.replace(/^```json\s*/i, "").replace(/```$/i, "");
+  // Remove outer quotes if present
+  if (str.startsWith('"') && str.endsWith('"')) {
+    str = str.slice(1, -1);
+  }
+  // Unescape inner quotes
+  str = str.replace(/\\"/g, '"');
+  // Replace \n with real line breaks or remove
+  str = str.replace(/\\n/g, "");
+  return str;
+}
