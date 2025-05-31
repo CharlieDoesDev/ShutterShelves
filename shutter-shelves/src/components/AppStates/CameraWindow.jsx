@@ -112,23 +112,11 @@ export default function CameraWindow({ onCapture, onCancel, onProcess }) {
         return photo;
       })
     );
-    // Convert all selected photos to base64
-    const base64Array = selectedPhotos.map(
-      (photo) => dataUrlToBase64Object(photo.dataUrl).base64
-    );
-    if (base64Array.length > 0) {
-      try {
-        const pantryItems = await extractPantryItemsFromGemini(base64Array);
-        const recipesText = await getGeminiRecipes(pantryItems);
-        if (onProcess)
-          onProcess({ pantryItems, recipesText, images: selectedPhotos });
-        if (onCapture) onCapture(selectedPhotos);
-      } catch (err) {
-        alert("Gemini API error: " + err.message);
-      }
+    if (selectedPhotos.length > 0) {
+      if (onProcess) onProcess(selectedPhotos);
+      if (onCapture) onCapture(selectedPhotos);
     } else {
-      if (onProcess) onProcess([]);
-      if (onCapture) onCapture([]);
+      alert("No photos selected.");
     }
   };
 
