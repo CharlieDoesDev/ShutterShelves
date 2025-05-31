@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "./ProcessingWindow.css";
-import { asyncProgressBar } from "../../../lib/Util.js";
+import { asyncProgressBar } from "../../lib/Util.js";
 
 export default function ProcessingWindow({ onDone }) {
   const [progress, setProgress] = useState(0);
