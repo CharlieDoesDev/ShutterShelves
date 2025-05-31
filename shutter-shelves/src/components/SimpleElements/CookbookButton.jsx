@@ -1,5 +1,5 @@
 import React from "react";
-import StyledButton from "./SimpleElements/StyledButton";
+import StyledButton from "./StyledButton";
 
 export default function CookbookButton({ onClick }) {
   return (
