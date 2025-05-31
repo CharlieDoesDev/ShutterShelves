@@ -4,7 +4,11 @@ import CenterPanel from "./components/CenterPanel";
 import CameraWindow from "./components/CameraWindow";
 import ProcessingWindow from "./components/ProcessingWindow";
 import DisplayOutput from "./components/DisplayOutput";
-import { asyncProgressBar } from "./lib/Util.js";
+import {
+  asyncProgressBar,
+  generateAnalysis,
+  generateRecipes,
+} from "./lib/Util.js";
 import SlideInLogo from "./components/SlideInLogo";
 
 // Mode constants
@@ -15,6 +19,7 @@ const MODE_DISPLAY_OUTPUT = "display-output";
 
 export default function App() {
   const [images, setImages] = useState([]);
+  const [recipes, setRecipes] = useState([]);
   const [mode, setMode] = useState(MODE_IDLE);
 
   // Handler for when a picture is captured
@@ -25,7 +30,15 @@ export default function App() {
 
   // Handler for canceling camera
   const handleCancel = () => setMode(MODE_IDLE);
-  const handleProcessingDone = () => setMode(MODE_DISPLAY_OUTPUT);
+
+  // Handler for when processing is done
+  const handleProcessingDone = () => {
+    // Generate recipes using Util.js
+    const analysis = generateAnalysis();
+    const generated = generateRecipes(analysis);
+    setRecipes(generated);
+    setMode(MODE_DISPLAY_OUTPUT);
+  };
 
   return (
     <div className="Container">
@@ -49,7 +62,7 @@ export default function App() {
       )}
       {mode === MODE_DISPLAY_OUTPUT && (
         <CenterPanel>
-          <DisplayOutput images={images} />
+          <DisplayOutput recipes={recipes} />
         </CenterPanel>
       )}
     </div>
