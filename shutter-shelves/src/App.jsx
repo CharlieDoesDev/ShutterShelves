@@ -11,7 +11,7 @@ import {
 } from "./lib/Util.js";
 import CookbookButton from "./components/SimpleElements/CookbookButton";
 import CookbookView from "./components/AppStates/CookbookView";
-import RecipeView from "./components/Recipe/RecipeView";
+import RecipeView from "./components/AppStates/RecipeView";
 
 // Mode constants
 const MODE_IDLE = "idle";
