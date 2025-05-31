@@ -146,7 +146,6 @@ export default function CameraWindow({ onCapture, onCancel, onProcess }) {
               photos={photos}
               selected={selected}
               onToggle={handleToggle}
-              buttonStyle={buttonStyle}
             />
             {/* Plus button for uploading more images */}
             <button
