@@ -96,7 +96,7 @@ export function removeAll(str, pattern) {
   if (typeof pattern === "string") {
     return str.split(pattern).join("");
   } else if (pattern instanceof RegExp) {
-    return str.replace(new RegExp(pattern, "g"), "");
+    return str.replace(pattern, ""); // Use the pattern as-is to preserve flags
   }
   return str;
 }
@@ -108,15 +108,17 @@ export function removeAll(str, pattern) {
  */
 export function aggressiveGeminiClean(raw) {
   let str = raw;
-  str = removeAll(str, /^```json\s*/im); // opening code block
+  // Remove code block markers (triple backticks, with or without 'json')
+  str = removeAll(str, /^```json\s*/gim); // opening code block
   str = removeAll(str, /```/g); // closing code block
-  str = removeAll(str, /\n/g); // escaped newlines
+  // Remove both escaped and real newlines
+  str = removeAll(str, /\\n/g); // escaped newlines
+  str = removeAll(str, /\r?\n/g); // actual newlines
+  // Remove escaped quotes (but NOT all quotes)
   str = removeAll(str, /\\"/g); // escaped quotes
-  str = removeAll(str, /\r/g); // carriage returns
-  str = removeAll(str, /\t/g); // tabs
-  str = removeAll(str, /\"/g); // more escaped quotes
-  str = removeAll(str, "Copy"); // stray 'Copy' text
-  str = removeAll(str, "Edit"); // stray 'Edit' text
+  // Remove stray 'Copy' and 'Edit' text
+  str = removeAll(str, /Copy/g);
+  str = removeAll(str, /Edit/g);
   // Remove outer quotes if present
   if (str.startsWith('"') && str.endsWith('"')) {
     str = str.slice(1, -1);
