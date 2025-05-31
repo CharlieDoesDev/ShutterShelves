@@ -42,7 +42,6 @@ export default function App() {
     parsedRecipes,
   }) => {
     setImages(images || []);
-    let parsedRecipes = [];
     try {
       parsedRecipes = JSON.parse(recipesText);
       if (!Array.isArray(parsedRecipes)) parsedRecipes = [parsedRecipes];
