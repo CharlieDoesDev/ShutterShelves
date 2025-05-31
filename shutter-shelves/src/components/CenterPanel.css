@@ -17,4 +17,6 @@
   max-width: 90vw;
   max-height: 90vh;
   position: relative;
+  left: 50%;
+  transform: translateX(-50%);
 }
