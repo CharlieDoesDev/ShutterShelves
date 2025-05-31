@@ -110,6 +110,7 @@ export default function App() {
           capture="environment"
           onChange={onFileChange}
           className="hidden"
+          display="none"
         />
         <StyledButton
           className="camera-btn mb-6 mx-auto"
