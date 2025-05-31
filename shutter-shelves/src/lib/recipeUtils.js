@@ -132,9 +132,18 @@ export function aggressiveGeminiClean(raw) {
  * @returns {string} - The strict prompt
  */
 export function getSingleRecipePrompt(items) {
+  const template = {
+    title: "...",
+    ingredients: ["..."],
+    instructions: ["..."],
+  };
   return `Given these pantry items: ${items.join(
     ", "
-  )}, generate ONE creative recipe as a JSON object. Respond ONLY with a single JSON object, no markdown, no explanation, no code block, no extra text. The object should have "Title", "Ingredients", and "Instructions" fields. Do not wrap your response in triple-backticks or any other formatting.`;
+  )}, generate ONE creative recipe as a minimal JSON object. Respond ONLY with a single JSON object, no markdown, no explanation, no code block, no extra text. The object should have only these fields: "title", "ingredients", and "instructions". Do not include any other fields or formatting. Use this exact template for your response: ${JSON.stringify(
+    template,
+    null,
+    2
+  )}`;
 }
 
 /**
