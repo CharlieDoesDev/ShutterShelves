@@ -84,9 +84,7 @@ export default function App() {
         <CameraWindow onCapture={handleCapture} onCancel={handleCancel} />
       )}
       {mode === MODE_PROCESSING && (
-        <CenterPanel>
-          <ProcessingWindow onDone={handleProcessingDone} />
-        </CenterPanel>
+        <ProcessingWindow onDone={handleProcessingDone} />
       )}
       {mode === MODE_DISPLAY_OUTPUT && (
         <CenterPanel>
