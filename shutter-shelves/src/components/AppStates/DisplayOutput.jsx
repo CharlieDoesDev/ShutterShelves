@@ -1,5 +1,6 @@
 import React from "react";
 import DisplayRecipes from "../Recipe/DisplayRecipes";
+import CenterPanel from "../SimpleContainers/CenterPanel";
 
 export default function DisplayOutput({
   recipes,
