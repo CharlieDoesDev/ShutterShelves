@@ -24,10 +24,12 @@ async function extractPantryItemsFromGemini(base64Array) {
 }
 
 async function getGeminiRecipes(items) {
+  // Improved prompt for Gemini to return only JSON
+  const prompt = `Given these pantry items, generate 5 creative recipes as a JSON array of objects. Respond ONLY with a JSON array of recipe objects, no markdown, no explanation, no code block, no extra text. Each object should have \"Title\", \"Ingredients\", and \"Instructions\" fields.`;
   const res = await fetch(`${PROXY}/recipes`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ items }),
+    body: JSON.stringify({ items, prompt }),
   });
   if (!res.ok) throw new Error("Gemini recipe error: " + res.status);
   const data = await res.json();
@@ -151,17 +153,26 @@ export default function CameraWindow({ onCapture, onCancel, onProcess }) {
             <button
               className="plus-upload-btn"
               title="Add more photos"
-              onClick={() =>
-                document.getElementById("photo-upload-input").click()
-              }
+              onClick={() => {
+                // Focus and trigger the file input for accessibility
+                const input = document.getElementById("photo-upload-input");
+                if (input) {
+                  input.value = ""; // Always reset so same file can be re-uploaded
+                  input.click();
+                }
+              }}
+              aria-label="Add more photos"
+              tabIndex={0}
+              type="button"
             >
-              +
+              <span aria-hidden="true">+</span>
               <input
                 id="photo-upload-input"
                 type="file"
                 accept="image/*"
                 multiple
                 style={{ display: "none" }}
+                tabIndex={-1}
                 onChange={async (e) => {
                   const files = Array.from(e.target.files);
                   if (!files.length) return;
