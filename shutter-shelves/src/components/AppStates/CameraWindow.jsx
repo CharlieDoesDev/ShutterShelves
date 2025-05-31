@@ -4,7 +4,11 @@ import CameraCounter from "../CameraWindowComponents/CameraCounter";
 import CameraCaptureButton from "../CameraWindowComponents/CameraCaptureButton";
 import FinishPhotosButton from "../CameraWindowComponents/FinishPhotosButton";
 import PhotoGrid from "../CameraWindowComponents/PhotoGrid";
-import { getNextDownsampleFactor, downsampleDataUrl, DOWNSAMPLE_FACTORS } from "../../lib/imageProcessing";
+import {
+  getNextDownsampleFactor,
+  downsampleDataUrl,
+  DOWNSAMPLE_FACTORS,
+} from "../../lib/imageProcessing";
 import { dataUrlToBase64Object } from "../../lib/imageUploader";
 
 const PROXY = "https://pantry-pilot-proxy.shuttershells.workers.dev";
@@ -96,21 +100,26 @@ export default function CameraWindow({ onCapture, onCancel, onProcess }) {
   // Process selected photos
   const handleProcess = async () => {
     // Downsample all selected photos according to the selected downsample factor
-    const selectedPhotos = await Promise.all(selected.map(async (i) => {
-      const photo = photos[i];
-      if (downsample !== 1) {
-        const dataUrl = await downsampleDataUrl(photo.dataUrl, downsample);
-        return { ...photo, dataUrl };
-      }
-      return photo;
-    }));
+    const selectedPhotos = await Promise.all(
+      selected.map(async (i) => {
+        const photo = photos[i];
+        if (downsample !== 1) {
+          const dataUrl = await downsampleDataUrl(photo.dataUrl, downsample);
+          return { ...photo, dataUrl };
+        }
+        return photo;
+      })
+    );
     // Convert all selected photos to base64
-    const base64Array = selectedPhotos.map(photo => dataUrlToBase64Object(photo.dataUrl).base64);
+    const base64Array = selectedPhotos.map(
+      (photo) => dataUrlToBase64Object(photo.dataUrl).base64
+    );
     if (base64Array.length > 0) {
       try {
         const pantryItems = await extractPantryItemsFromGemini(base64Array);
         const recipesText = await getGeminiRecipes(pantryItems);
-        if (onProcess) onProcess({ pantryItems, recipesText, images: selectedPhotos });
+        if (onProcess)
+          onProcess({ pantryItems, recipesText, images: selectedPhotos });
         if (onCapture) onCapture(selectedPhotos);
       } catch (err) {
         alert("Gemini API error: " + err.message);
@@ -126,119 +135,78 @@ export default function CameraWindow({ onCapture, onCancel, onProcess }) {
     setShowGrid(false);
   };
 
-  // --- Styling ---
-  const cameraWindowStyle = {
-    position: "fixed",
-    top: 0,
-    left: 0,
-    width: "100vw",
-    height: "100vh",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    background: "rgba(245,247,255,0.85)",
-    zIndex: 1000,
-  };
-
-  const cardStyle = {
-    background: "rgba(255,255,255,0.97)",
-    borderRadius: 24,
-    boxShadow: "0 8px 32px 0 rgba(31, 38, 135, 0.18)",
-    padding: 32,
-    minWidth: 420,
-    maxWidth: 700,
-    width: "min(98vw, 700px)",
-    minHeight: 480,
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    overflow: "hidden",
-  };
-
-  const buttonStyle = {
-    fontSize: 15,
-    padding: "14px 32px",
-    borderRadius: 16,
-    minWidth: 160,
-    margin: "0 8px",
-    background: "linear-gradient(90deg, #6366f1 0%, #a5b4fc 100%)",
-    color: "#fff",
-    border: "none",
-    boxShadow: "0 2px 8px 0 rgba(99,102,241,0.10)",
-    cursor: "pointer",
-    fontWeight: 600,
-    transition: "background 0.2s, box-shadow 0.2s",
-    whiteSpace: "normal",
-    wordBreak: "break-word",
-    textAlign: "center",
-    lineHeight: 1.2,
-  };
-
-  const cancelButtonStyle = {
-    ...buttonStyle,
-    background: "#e5e7eb",
-    color: "#374151",
-    marginTop: 16,
-  };
-
   // --- Grid view ---
   if (showGrid) {
     return (
-      <div style={cameraWindowStyle}>
-        <div className="camera-window" style={{ ...cardStyle, minHeight: 520 }}>
-          <h2 style={{ marginBottom: 8, fontWeight: 700, fontSize: 22 }}>
-            Select Photos
-          </h2>
-          <div
-            style={{
-              width: "100%",
-              maxHeight: 320,
-              overflowY: "auto",
-              marginBottom: 16,
-            }}
-          >
+      <div className="camera-window-overlay">
+        <div className="camera-window card-grid">
+          <h2 className="camera-window-title">Select Photos</h2>
+          <div className="photo-grid-container">
             <PhotoGrid
               photos={photos}
               selected={selected}
               onToggle={handleToggle}
               buttonStyle={buttonStyle}
             />
+            {/* Plus button for uploading more images */}
+            <button
+              className="plus-upload-btn"
+              title="Add more photos"
+              onClick={() =>
+                document.getElementById("photo-upload-input").click()
+              }
+            >
+              +
+              <input
+                id="photo-upload-input"
+                type="file"
+                accept="image/*"
+                multiple
+                style={{ display: "none" }}
+                onChange={async (e) => {
+                  const files = Array.from(e.target.files);
+                  if (!files.length) return;
+                  const newPhotos = await Promise.all(
+                    files.map(
+                      (file) =>
+                        new Promise((resolve) => {
+                          const reader = new FileReader();
+                          reader.onload = (ev) =>
+                            resolve({ dataUrl: ev.target.result });
+                          reader.readAsDataURL(file);
+                        })
+                    )
+                  );
+                  setPhotos((prev) => [...prev, ...newPhotos]);
+                  setSelected((prev) => [
+                    ...prev,
+                    ...newPhotos.map((_, i) => prev.length + i),
+                  ]);
+                  e.target.value = ""; // reset input
+                }}
+              />
+            </button>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 18, justifyContent: "center" }}>
-            <span style={{ fontWeight: 600, fontSize: 15, marginRight: 8 }}>Downsample:</span>
+          <div className="downsample-row">
+            <span className="downsample-label">Downsample:</span>
             <select
               value={downsample}
-              onChange={e => setDownsample(Number(e.target.value))}
-              style={{
-                fontSize: 15,
-                padding: "8px 18px",
-                borderRadius: 12,
-                border: "1px solid #a5b4fc",
-                background: "#f3f4f6",
-                color: "#374151",
-                fontWeight: 600,
-                outline: "none"
-              }}
+              onChange={(e) => setDownsample(Number(e.target.value))}
+              className="downsample-select"
             >
-              {[0.25, 0.5, 0.75, 0.85, 0.95, 1].map(f => (
-                <option key={f} value={f}>{f}x</option>
+              {[0.25, 0.5, 0.75, 0.85, 0.95, 1].map((f) => (
+                <option key={f} value={f}>
+                  {f}x
+                </option>
               ))}
             </select>
           </div>
-          <div
-            style={{
-              display: "flex",
-              gap: 12,
-              marginTop: 12,
-              width: "100%",
-              justifyContent: "center",
-            }}
-          >
-            <button style={cancelButtonStyle} onClick={handleCancelGrid}>
+          <div className="camera-window-btn-row">
+            <button className="camera-cancel-btn" onClick={handleCancelGrid}>
               Back
             </button>
             <button
-              style={buttonStyle}
+              className="camera-process-btn"
               onClick={handleProcess}
               disabled={selected.length === 0}
             >
@@ -252,41 +220,21 @@ export default function CameraWindow({ onCapture, onCancel, onProcess }) {
 
   // --- Camera view ---
   return (
-    <div style={cameraWindowStyle}>
-      <div className="camera-window" style={cardStyle}>
+    <div className="camera-window-overlay">
+      <div className="camera-window card-view">
         <CameraCounter count={photos.length} />
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          style={{
-            width: "100%",
-            borderRadius: 18,
-            marginBottom: 18,
-            background: "#e5e7eb",
-          }}
-        />
+        <video ref={videoRef} autoPlay playsInline className="camera-video" />
         <canvas ref={canvasRef} style={{ display: "none" }} />
-        <div
-          style={{
-            width: "100%",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-          }}
-        >
-          <button style={buttonStyle} onClick={handleCaptureClick}>
+        <div className="camera-btn-col">
+          <button className="camera-capture-btn" onClick={handleCaptureClick}>
             Capture Photo
           </button>
           {photos.length > 0 && (
-            <button
-              style={{ ...buttonStyle, marginTop: 12 }}
-              onClick={handleFinish}
-            >
+            <button className="camera-finish-btn" onClick={handleFinish}>
               Finish Taking Photos
             </button>
           )}
-          <button style={cancelButtonStyle} onClick={onCancel}>
+          <button className="camera-cancel-btn" onClick={onCancel}>
             Cancel
           </button>
         </div>
