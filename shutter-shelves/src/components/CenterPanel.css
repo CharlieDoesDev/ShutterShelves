@@ -1,20 +1,7 @@
-/* CenterPanel.css - 3D border and centering styles */
+/* Minimal centering styles for CenterPanel */
 .center-panel {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  margin: 0 auto;
-  /* Ensures horizontal centering if width is less than parent */
-  background: #f8fafc;
-  border-radius: 1.5rem;
-  box-shadow: 0 6px 24px 0 rgba(0, 0, 0, 0.1), 0 1.5px 0 #fff inset,
-    0 0 0 4px #e0e7ef inset;
-  border: 3px solid #d1d5db;
-  padding: 2.5rem 2rem;
-  min-width: 320px;
-  min-height: 320px;
-  max-width: 90vw;
-  max-height: 90vh;
-  left: 50%;
 }
