@@ -12,7 +12,6 @@ import {
 import CookbookButton from "./components/SimpleElements/CookbookButton";
 import CookbookView from "./components/AppStates/CookbookView";
 import RecipeView from "./components/AppStates/RecipeView";
-import { onProcessFinished as aiProcessFinished } from "./lib/AIProcessing";
 
 // Mode constants
 const MODE_IDLE = "idle";
@@ -35,11 +34,34 @@ export default function App() {
     setMode(MODE_PROCESSING);
   };
 
-  // Handler for AI processing results (from ProcessingWindow)
-  const onProcessFinished = (params) => {
-    const { images, recipes } = aiProcessFinished(params);
-    setImages(images);
-    setRecipes(recipes);
+  // Handler for Gemini processing results (from ProcessingWindow)
+  const onProcessFinished = ({
+    pantryItems,
+    recipesText,
+    images,
+    parsedRecipes: parsedRecipesFromProcessing,
+  }) => {
+    setImages(images || []);
+    // If parsedRecipesFromProcessing exists and is non-empty, use it
+    if (parsedRecipesFromProcessing && parsedRecipesFromProcessing.length > 0) {
+      setRecipes(parsedRecipesFromProcessing);
+    } else {
+      // Fallback: try to parse recipesText as JSON
+      let parsedRecipes = [];
+      try {
+        parsedRecipes = JSON.parse(recipesText);
+        if (!Array.isArray(parsedRecipes)) parsedRecipes = [parsedRecipes];
+      } catch {
+        parsedRecipes = [
+          {
+            title: "Recipes",
+            ingredients: pantryItems || [],
+            steps: [recipesText],
+          },
+        ];
+      }
+      setRecipes(parsedRecipes);
+    }
     setMode(MODE_DISPLAY_OUTPUT);
   };
 

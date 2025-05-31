@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import CenterPanel from "../SimpleContainers/CenterPanel";
 import "./ProcessingWindow.css";
 import { asyncProgressBar } from "../../lib/Util.js";
 
@@ -118,17 +117,12 @@ export default function ProcessingWindow({ images, onDone, onProcessed }) {
   }, [images, onDone, onProcessed]);
 
   return (
-    <CenterPanel>
-      <div className="processing-window">
-        <h2>Processing...</h2>
-        <div className="progress-bar">
-          <div
-            className="progress-bar-inner"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-        <div>{progress}%</div>
+    <div className="processing-window">
+      <h2>Processing...</h2>
+      <div className="progress-bar">
+        <div className="progress-bar-inner" style={{ width: `${progress}%` }} />
       </div>
-    </CenterPanel>
+      <div>{progress}%</div>
+    </div>
   );
 }
