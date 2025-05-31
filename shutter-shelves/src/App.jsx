@@ -25,7 +25,7 @@ export default function App() {
   const handleProcessingDone = () => setMode(MODE_IDLE);
 
   return (
-    <div clssName="Container">
+    <div className="Container">
       {mode === MODE_IDLE && (
         <CenterPanel>
           <StyledButton onClick={() => setMode(MODE_TAKING_PICTURE)}>
@@ -34,10 +34,14 @@ export default function App() {
         </CenterPanel>
       )}
       {mode === MODE_TAKING_PICTURE && (
-        <CameraWindow onCapture={handleCapture} onCancel={handleCancel} />
+        <CenterPanel>
+          <CameraWindow onCapture={handleCapture} onCancel={handleCancel} />
+        </CenterPanel>
       )}
       {mode === MODE_PROCESSING && (
-        <ProcessingWindow onDone={handleProcessingDone} />
+        <CenterPanel>
+          <ProcessingWindow onDone={handleProcessingDone} />
+        </CenterPanel>
       )}
     </div>
   );
