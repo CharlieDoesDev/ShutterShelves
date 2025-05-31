@@ -1,16 +1,14 @@
 import React, { useState, useEffect } from "react";
-import StyledButton from "./components/StyledButton";
 import CenterPanel from "./components/CenterPanel";
 import CameraWindow from "./components/CameraWindow";
 import ProcessingWindow from "./components/ProcessingWindow";
-import DisplayOutput from "./components/DisplayOutput";
+import DisplayOutput from "./components/Recipe/DisplayOutput.jsx";
 import IdleWindow from "./components/IdleWindow";
 import {
   asyncProgressBar,
   generateAnalysis,
   generateRecipes,
 } from "./lib/Util.js";
-import SlideInLogo from "./components/SlideInLogo";
 
 // Mode constants
 const MODE_IDLE = "idle";
