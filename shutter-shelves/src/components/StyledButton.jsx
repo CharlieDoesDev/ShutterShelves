@@ -13,7 +13,9 @@ export default function StyledButton({
     <button
       type={type}
       onClick={onClick}
-      className={`styled-btn styled-btn-circle ${className}`}
+      className={`styled-btn styled-btn-circle ${className} ${
+        imagePath && imagePath.length > 0 ? "hidden" : ""
+      }`}
       {...props}
     >
       {imagePath && imagePath.length > 0 ? (
