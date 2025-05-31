@@ -12,7 +12,7 @@ export default function StyledButton({
     <button
       type={type}
       onClick={onClick}
-      className={`styled-btn ${className}`}
+      className={`styled-btn styled-btn-circle ${className}`}
       {...props}
     >
       {children}

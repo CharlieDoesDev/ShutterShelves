@@ -92,42 +92,60 @@ export default function App() {
 
   // Main app UI
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-[#f8fafc] to-[#e0e7ef] flex flex-col">
-      <div className="flex-1 flex flex-col overflow-y-auto">
-        {showUploader ? (
-          <ImageUploader
-            onReset={handleReset}
-            appendMode={appendMode}
-            onAzureVision={handleAzureVision}
-            env={env}
-          />
-        ) : (
-          <div className="flex flex-col items-center w-full px-2 pt-2 pb-8">
-            <div className="w-full flex items-center justify-between mb-2">
-              <div className="flex-1 flex justify-center">
+    <div className="min-h-screen w-full relative overflow-hidden">
+      {/* Blurry food background */}
+      <div
+        className="absolute inset-0 -z-10 bg-cover bg-center blur-sm opacity-60"
+        style={{
+          backgroundImage:
+            "url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1200&q=80')",
+        }}
+        aria-hidden="true"
+      />
+      <div className="min-h-screen w-full bg-gradient-to-br from-[#f8fafc] to-[#e0e7ef] flex flex-col bg-opacity-80">
+        <div className="flex-1 flex flex-col overflow-y-auto">
+          {showUploader ? (
+            <ImageUploader
+              onReset={handleReset}
+              appendMode={appendMode}
+              onAzureVision={handleAzureVision}
+              env={env}
+            />
+          ) : (
+            <div className="flex flex-col items-center w-full px-2 pt-2 pb-8">
+              <div className="w-full flex items-center justify-between mb-2">
+                <div className="flex-1 flex justify-center">
+                  <StyledButton
+                    className="text-blue-400 text-lg font-bold hover:bg-blue-50 transition-all"
+                    onClick={handleReset}
+                    aria-label="Back"
+                  >
+                    ←
+                  </StyledButton>
+                </div>
                 <StyledButton
-                  className="text-blue-400 text-lg font-bold px-2 py-1 rounded hover:bg-blue-50 transition-all"
-                  onClick={handleReset}
-                  aria-label="Back"
+                  className="text-xs text-blue-500 underline ml-2"
+                  onClick={handleAppend}
+                  style={{
+                    borderRadius: "0.375rem",
+                    width: "auto",
+                    height: "auto",
+                    fontSize: "1rem",
+                    padding: "0.5rem 1rem",
+                  }}
                 >
-                  ← Back
+                  Add Another Photo
                 </StyledButton>
               </div>
-              <StyledButton
-                className="text-xs text-blue-500 underline ml-2"
-                onClick={handleAppend}
-              >
-                Add Another Photo
-              </StyledButton>
+              <div className="w-full max-w-xs mx-auto flex flex-col gap-6 overflow-y-auto">
+                {items.length > 0 && <PantryResults items={items} />}
+                {recipes.length > 0 && (
+                  <RecipeRecommendations recipes={recipes} />
+                )}
+              </div>
             </div>
-            <div className="w-full max-w-xs mx-auto flex flex-col gap-6 overflow-y-auto">
-              {items.length > 0 && <PantryResults items={items} />}
-              {recipes.length > 0 && (
-                <RecipeRecommendations recipes={recipes} />
-              )}
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
