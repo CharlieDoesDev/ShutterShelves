@@ -42,12 +42,16 @@ export default function App() {
     parsedRecipes: parsedRecipesFromProcessing,
   }) => {
     setImages(images || []);
+    let finalParsedRecipes;
     try {
-      parsedRecipes = JSON.parse(recipesText);
-      if (!Array.isArray(parsedRecipes)) parsedRecipes = [parsedRecipes];
+      finalParsedRecipes = JSON.parse(recipesText);
+      if (!Array.isArray(finalParsedRecipes))
+        finalParsedRecipes = [finalParsedRecipes];
     } catch {
-      parsedRecipes =
-        parsedRecipesFromProcessing && parsedRecipesFromProcessing.length > 0
+      finalParsedRecipes =
+        parsedRecipesFromProcessing &&
+        Array.isArray(parsedRecipesFromProcessing) &&
+        parsedRecipesFromProcessing.length > 0
           ? parsedRecipesFromProcessing
           : [
               {
@@ -57,7 +61,7 @@ export default function App() {
               },
             ];
     }
-    setRecipes(parsedRecipes);
+    setRecipes(finalParsedRecipes);
     setMode(MODE_DISPLAY_OUTPUT);
   };
 
