@@ -21,16 +21,18 @@ export function readFileAsBase64(file) {
 
 /**
  * Handles the full image upload flow: file selection, base64 conversion, and callback.
- * @param {File} file
- * @param {Function} onAzureVision - callback to process the image (base64)
- * @param {boolean} appendMode
- * @returns {Promise<{dataUrl: string}|null>}
+ * Supports single or multiple files, and returns an array of { dataUrl, base64 } objects.
+ * @param {File|File[]} fileOrFiles
+ * @returns {Promise<Array<{dataUrl: string, base64: string}>>}
  */
-export async function handleImageUpload(file, onAzureVision, appendMode) {
-  if (!file) return null;
-  const { base64, dataUrl } = await readFileAsBase64(file);
-  if (onAzureVision) {
-    await onAzureVision(base64, appendMode);
-  }
-  return { dataUrl };
+export async function handleImageUpload(fileOrFiles) {
+  if (!fileOrFiles) return [];
+  const files = Array.isArray(fileOrFiles) ? fileOrFiles : [fileOrFiles];
+  const results = await Promise.all(
+    files.map(async (file) => {
+      const { base64, dataUrl } = await readFileAsBase64(file);
+      return { dataUrl, base64 };
+    })
+  );
+  return results;
 }
