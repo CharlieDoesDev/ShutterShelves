@@ -143,107 +143,40 @@ export default function App() {
 
   // Main app UI
   return (
-    <div className="center-panel-parent relative overflow-hidden">
-      <CenterPanel>
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          multiple
-          onChange={onFileChange}
-          className="hidden"
-        />
-        <StyledButton
-          className="camera-btn mb-6 mx-auto"
-          onClick={() => inputRef.current.click()}
-          aria-label="Open Camera"
-          imagePath={null}
-        >
-          {images.length === 0 ? "Upload/Take Photo(s)" : "Add More"}
-        </StyledButton>
-        {images.length > 0 && (
-          <div className="w-full flex flex-col items-center gap-8 mt-4">
-            {images.map((img, idx) => (
-              <div
-                key={idx}
-                className="w-full max-w-xs flex flex-col items-center bg-white bg-opacity-80 rounded-xl shadow-lg p-4 mb-4"
-              >
-                <img
-                  src={img.dataUrl}
-                  alt={`Captured ${idx + 1}`}
-                  className="rounded-xl shadow w-full object-cover mb-2 border border-gray-200"
-                  style={{ aspectRatio: "1/1", background: "#eee" }}
-                />
-                <button
-                  className="text-red-500 underline text-xs mb-2"
-                  onClick={() => removeImage(idx)}
-                  style={{
-                    borderRadius: "0.375rem",
-                    width: "auto",
-                    height: "auto",
-                    fontSize: "0.9rem",
-                    padding: "0.25rem 0.5rem",
-                  }}
-                >
-                  Remove
-                </button>
-                <div className="mb-2">
-                  <strong>Identified Items:</strong>
-                  <ul className="list-disc list-inside mt-1">
-                    {img.analysis.map((it, i) => (
-                      <li key={i}>{it}</li>
-                    ))}
-                  </ul>
-                </div>
-                <div>
-                  <strong>Recipes:</strong>
-                  <ol className="list-decimal list-inside mt-1 space-y-2">
-                    {img.recipes.map((r, i) => (
-                      <li
-                        key={i}
-                        className="border rounded p-2 bg-gray-50"
-                      >
-                        <div className="font-bold">{r.title}</div>
-                        <div>
-                          <span className="font-semibold">Ingredients:</span>
-                          <ul className="list-disc list-inside ml-4">
-                            {r.ingredients.map((ing, j) => (
-                              <li key={j}>{ing}</li>
-                            ))}
-                          </ul>
-                        </div>
-                        <div className="mt-1">
-                          <span className="font-semibold">Steps:</span>
-                          <ol className="list-decimal list-inside ml-4">
-                            {r.steps.map((step, k) => (
-                              <li key={k}>{step}</li>
-                            ))}
-                          </ol>
-                        </div>
-                      </li>
-                    ))}
-                  </ol>
-                </div>
-              </div>
-            ))}
-            <button
-              className="text-blue-500 underline text-sm mb-2"
-              onClick={handleReset}
-              style={{
-                borderRadius: "0.375rem",
-                width: "auto",
-                height: "auto",
-                fontSize: "1rem",
-                padding: "0.5rem 1rem",
-              }}
-            >
-              Reset
-            </button>
-          </div>
-        )}
-      </CenterPanel>
-    </div>
+    <CenterPanel>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={onFileChange}
+        className="hidden"
+        display="none"
+      />
+      <StyledButton
+        className="camera-btn mb-6 mx-auto"
+        onClick={() => inputRef.current.click()}
+        aria-label="Open Camera"
+        imagePath={image}
+      />
+      {image && (
+        <div className="w-full flex flex-col items-center">
+          <img
+            src={image}
+            alt="Captured"
+            className="rounded-xl shadow-lg w-full max-w-xs object-cover mb-4 border border-gray-200"
+            style={{ aspectRatio: "1/1", background: "#eee" }}
+          />
+          <StyledButton
+            className="retake-btn mb-2"
+            onClick={() => setImage(null)}
+            imagePath={null}
+          >
+            Retake Photo
+          </StyledButton>
+        </div>
+      )}
+    </CenterPanel>
   );
 }
 

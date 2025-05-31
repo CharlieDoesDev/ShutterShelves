@@ -16,5 +16,5 @@
   min-height: 320px;
   max-width: 90vw;
   max-height: 90vh;
-  position: relative;
+  left: 50%;
 }
