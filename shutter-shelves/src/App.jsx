@@ -1,71 +1,35 @@
-import React, { useRef, useState } from "react";
+import React, { useState } from "react";
 import StyledButton from "./components/StyledButton";
-import { handleImageUpload } from "./lib/imageUploader";
 import CenterPanel from "./components/CenterPanel";
 import { InitiateImages } from "./lib/App.js";
+import {
+  generateAnalysis,
+  generateRecipes,
+  removeImage,
+  handleReset,
+  onFileChange,
+} from "./lib/Util.js";
+
+// Mode constants
+const MODE_IDLE = "idle";
+const MODE_TAKING_PICTURE = "taking-picture";
+const MODE_PROCESSING = "processing";
 
 export default function App() {
   const [images, setImages] = useState([]);
-  const inputRef = useRef();
-
-  async function onFileChange(e) {
-    const files = Array.from(e.target.files);
-    if (!files.length) return;
-    const newImages = await handleImageUpload(files);
-    const withAnalysis = newImages.map((img) => {
-      const analysis = generateAnalysis();
-      return {
-        ...img,
-        analysis,
-        recipes: generateRecipes(analysis),
-      };
-    });
-    setImages((prev) => [...prev, ...withAnalysis]);
-    e.target.value = "";
-  }
-
-  function removeImage(idx) {
-    setImages((prev) => prev.filter((_, i) => i !== idx));
-  }
-
-  function handleReset() {
-    setImages([]);
-  }
-
-  function generateAnalysis() {
-    const items = [
-      "canned beans",
-      "pasta",
-      "tomato sauce",
-      "olive oil",
-      "salt",
-      "pepper",
-      "rice",
-      "spices",
-    ];
-    const count = Math.floor(Math.random() * 4) + 3;
-    return items.sort(() => 0.5 - Math.random()).slice(0, count);
-  }
-
-  function generateRecipes(analysis) {
-    return [
-      {
-        title: "Pantry Pasta",
-        ingredients: analysis.slice(0, 3),
-        steps: ["Boil pasta.", "Heat sauce.", "Combine and serve."],
-      },
-      {
-        title: "Quick Rice Bowl",
-        ingredients: analysis.slice(0, 2),
-        steps: ["Cook rice.", "Add toppings.", "Enjoy!"],
-      },
-    ];
-  }
+  const [mode, setMode] = useState(MODE_IDLE);
 
   return (
     <div className="App">
       <CenterPanel>
-        <StyledButton onClick={InitiateImages}></StyledButton>
+        {/* Example usage of mode constants */}
+        {mode === MODE_IDLE && (
+          <StyledButton onClick={() => setMode(MODE_TAKING_PICTURE)}>
+            Start
+          </StyledButton>
+        )}
+        {mode === MODE_TAKING_PICTURE && <div>Picture Taking Mode</div>}
+        {mode === MODE_PROCESSING && <div>Processing...</div>}
       </CenterPanel>
     </div>
   );
