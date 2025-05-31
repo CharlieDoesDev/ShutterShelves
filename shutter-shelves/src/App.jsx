@@ -30,8 +30,22 @@ export default function App() {
 
   // Handler for when a picture is captured
   const handleCapture = (imageData) => {
-    setImages((prev) => [...prev, imageData]);
+    setImages(imageData);
     setMode(MODE_PROCESSING);
+  };
+
+  // Handler for Gemini processing results (from ProcessingWindow)
+  const handleGeminiProcess = ({ pantryItems, recipesText, images }) => {
+    setImages(images || []);
+    let parsedRecipes = [];
+    try {
+      parsedRecipes = JSON.parse(recipesText);
+      if (!Array.isArray(parsedRecipes)) parsedRecipes = [parsedRecipes];
+    } catch {
+      parsedRecipes = [{ title: "Recipes", ingredients: pantryItems || [], steps: [recipesText] }];
+    }
+    setRecipes(parsedRecipes);
+    setMode(MODE_DISPLAY_OUTPUT);
   };
 
   // Handler for canceling camera
@@ -79,7 +93,7 @@ export default function App() {
       )}
       {mode === MODE_PROCESSING && (
         <CenterPanel>
-          <ProcessingWindow onDone={handleProcessingDone} />
+          <ProcessingWindow images={images} onProcessed={handleGeminiProcess} onDone={() => {}} />
         </CenterPanel>
       )}
       {mode === MODE_DISPLAY_OUTPUT && (
