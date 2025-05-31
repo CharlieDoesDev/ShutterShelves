@@ -4,6 +4,7 @@ import CenterPanel from "./components/CenterPanel";
 import CameraWindow from "./components/CameraWindow";
 import ProcessingWindow from "./components/ProcessingWindow";
 import DisplayOutput from "./components/DisplayOutput";
+import IdleWindow from "./components/IdleWindow";
 import {
   asyncProgressBar,
   generateAnalysis,
@@ -45,9 +46,10 @@ export default function App() {
       <SlideInLogo />
       {mode === MODE_IDLE && (
         <CenterPanel>
-          <StyledButton onClick={() => setMode(MODE_TAKING_PICTURE)}>
-            Start
-          </StyledButton>
+          <IdleWindow
+            onStart={() => setMode(MODE_TAKING_PICTURE)}
+            recipes={recipes}
+          />
         </CenterPanel>
       )}
       {mode === MODE_TAKING_PICTURE && (
@@ -62,7 +64,7 @@ export default function App() {
       )}
       {mode === MODE_DISPLAY_OUTPUT && (
         <CenterPanel>
-          <DisplayOutput recipes={recipes} />
+          <DisplayOutput recipes={recipes} onNext={() => setMode(MODE_IDLE)} />
         </CenterPanel>
       )}
     </div>

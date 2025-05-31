@@ -1,6 +1,6 @@
 import React from "react";
 
-export default function DisplayOutput({ recipes }) {
+export default function DisplayOutput({ recipes, onNext }) {
   return (
     <div
       className="display-output"
@@ -42,6 +42,21 @@ export default function DisplayOutput({ recipes }) {
       ) : (
         <div>No recipes generated.</div>
       )}
+      <button
+        style={{
+          marginTop: 24,
+          padding: "0.5rem 2rem",
+          fontSize: 16,
+          borderRadius: 8,
+          background: "#2563eb",
+          color: "#fff",
+          border: "none",
+          cursor: "pointer",
+        }}
+        onClick={onNext}
+      >
+        Next
+      </button>
     </div>
   );
 }
