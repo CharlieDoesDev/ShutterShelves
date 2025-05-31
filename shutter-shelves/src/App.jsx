@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import ImageUploader from './components/ImageUploader';
-import PantryResults from './components/PantryResults';
-import RecipeRecommendations from './components/RecipeRecommendations';
-import { analyzeImageWithAzure } from './lib/azure-vision';
-import { getRecipesFromOpenAI } from './lib/azure-openai';
+import React, { useState, useEffect } from "react";
+import ImageUploader from "./components/ImageUploader";
+import PantryResults from "./components/PantryResults";
+import RecipeRecommendations from "./components/RecipeRecommendations";
+import { analyzeImageWithAzure } from "./lib/azure-vision";
+import { getRecipesFromOpenAI } from "./lib/azure-openai";
+import StyledButton from "./components/StyledButton";
 
 export default function App() {
   // App state
@@ -19,8 +20,8 @@ export default function App() {
   useEffect(() => {
     async function fetchAndDecryptEnv() {
       try {
-        const res = await fetch(import.meta.env.BASE_URL + 'config.env.enc');
-        if (!res.ok) throw new Error('Failed to fetch encrypted env');
+        const res = await fetch(import.meta.env.BASE_URL + "config.env.enc");
+        if (!res.ok) throw new Error("Failed to fetch encrypted env");
         const enc = await res.arrayBuffer();
         // TODO: Implement decryptEnv to return a JS object from ArrayBuffer
         const decrypted = await decryptEnv(enc); // You must implement this function
@@ -36,12 +37,14 @@ export default function App() {
 
   async function handleAzureVision(imageBase64, append) {
     try {
-      if (!env) throw new Error('Environment not loaded');
+      if (!env) throw new Error("Environment not loaded");
       // Only call Azure Vision to extract items from the image
       const visionResult = await analyzeImageWithAzure(imageBase64, env);
       const itemsExtracted = visionResult.tags?.map((t) => t.name) || [];
-      setItems(append ? (prev) => [...prev, ...itemsExtracted] : itemsExtracted);
-      console.log('Extracted items:', itemsExtracted);
+      setItems(
+        append ? (prev) => [...prev, ...itemsExtracted] : itemsExtracted
+      );
+      console.log("Extracted items:", itemsExtracted);
 
       // Only call Gemini to generate recipes from the extracted items
       if (itemsExtracted.length === 0) {
@@ -49,12 +52,14 @@ export default function App() {
         return;
       }
       const recipeResult = await getRecipesFromOpenAI(itemsExtracted, env);
-      console.log('Gemini recipe completion:', recipeResult);
+      console.log("Gemini recipe completion:", recipeResult);
       setRecipes([recipeResult.completion]);
       setEnvError(null); // Clear any previous error
     } catch (err) {
       // Show a generic error message, not OpenAI-specific
-      setEnvError('A problem occurred while generating recipes. Please wait and try again.');
+      setEnvError(
+        "A problem occurred while generating recipes. Please wait and try again."
+      );
       console.error(err);
     }
   }
@@ -71,10 +76,18 @@ export default function App() {
   }
 
   if (loadingEnv) {
-    return <div className="min-h-screen flex items-center justify-center">Loading configuration...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Loading configuration...
+      </div>
+    );
   }
   if (envError) {
-    return <div className="min-h-screen flex items-center justify-center text-red-500">{envError}</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center text-red-500">
+        {envError}
+      </div>
+    );
   }
 
   // Main app UI
@@ -91,23 +104,27 @@ export default function App() {
         ) : (
           <div className="flex flex-col items-center w-full px-2 pt-2 pb-8">
             <div className="w-full flex items-center justify-between mb-2">
-              <button
-                className="text-blue-400 text-lg font-bold px-2 py-1 rounded hover:bg-blue-50 transition-all"
-                onClick={handleReset}
-                aria-label="Back"
-              >
-                ← Back
-              </button>
-              <button
+              <div className="flex-1 flex justify-center">
+                <StyledButton
+                  className="text-blue-400 text-lg font-bold px-2 py-1 rounded hover:bg-blue-50 transition-all"
+                  onClick={handleReset}
+                  aria-label="Back"
+                >
+                  ← Back
+                </StyledButton>
+              </div>
+              <StyledButton
                 className="text-xs text-blue-500 underline ml-2"
                 onClick={handleAppend}
               >
                 Add Another Photo
-              </button>
+              </StyledButton>
             </div>
             <div className="w-full max-w-xs mx-auto flex flex-col gap-6 overflow-y-auto">
               {items.length > 0 && <PantryResults items={items} />}
-              {recipes.length > 0 && <RecipeRecommendations recipes={recipes} />}
+              {recipes.length > 0 && (
+                <RecipeRecommendations recipes={recipes} />
+              )}
             </div>
           </div>
         )}
@@ -119,8 +136,8 @@ export default function App() {
 // Real decryptEnv: matches encrypt_env.py (AES-GCM, PBKDF2, SHA256, 200k iterations, 16-byte salt, 12-byte nonce)
 async function decryptEnv(encBuffer) {
   // Prompt for password (show a modal or use prompt for demo)
-  const password = prompt('Enter decryption password:');
-  if (!password) throw new Error('No password provided');
+  const password = prompt("Enter decryption password:");
+  if (!password) throw new Error("No password provided");
 
   const bytes = new Uint8Array(encBuffer);
   const salt = bytes.slice(0, 16);
@@ -129,35 +146,35 @@ async function decryptEnv(encBuffer) {
 
   // Derive key using PBKDF2 (SHA256, 200k iterations)
   const keyMaterial = await window.crypto.subtle.importKey(
-    'raw',
+    "raw",
     new TextEncoder().encode(password),
-    'PBKDF2',
+    "PBKDF2",
     false,
-    ['deriveKey']
+    ["deriveKey"]
   );
   const key = await window.crypto.subtle.deriveKey(
     {
-      name: 'PBKDF2',
+      name: "PBKDF2",
       salt: salt,
       iterations: 200000,
-      hash: 'SHA-256',
+      hash: "SHA-256",
     },
     keyMaterial,
-    { name: 'AES-GCM', length: 256 },
+    { name: "AES-GCM", length: 256 },
     false,
-    ['decrypt']
+    ["decrypt"]
   );
 
   // Decrypt with AES-GCM
   let plaintext;
   try {
     plaintext = await window.crypto.subtle.decrypt(
-      { name: 'AES-GCM', iv: nonce },
+      { name: "AES-GCM", iv: nonce },
       key,
       ciphertext
     );
   } catch (e) {
-    throw new Error('Decryption failed: wrong password or corrupted file');
+    throw new Error("Decryption failed: wrong password or corrupted file");
   }
 
   // Try to parse as .env (key=value) or JSON
@@ -168,7 +185,7 @@ async function decryptEnv(encBuffer) {
   } catch {
     // Fallback: parse .env format
     const env = {};
-    text.split(/\r?\n/).forEach(line => {
+    text.split(/\r?\n/).forEach((line) => {
       const m = line.match(/^([A-Za-z0-9_]+)=(.*)$/);
       if (m) env[m[1]] = m[2];
     });
