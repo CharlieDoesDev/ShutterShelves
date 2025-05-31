@@ -1,6 +1,6 @@
 import React from "react";
 
-function extractFirstJson(str) {
+function extractFirstRecipe(str) {
   // Try to extract the first JSON object or array from a string
   const objMatch = str.match(/\{[\s\S]*?\}/);
   const arrMatch = str.match(/\[[\s\S]*?\]/);
@@ -12,7 +12,11 @@ function extractFirstJson(str) {
   }
   if (jsonStr) {
     try {
-      return JSON.parse(jsonStr);
+      const parsed = JSON.parse(jsonStr);
+      if (Array.isArray(parsed)) {
+        return parsed[0] || null;
+      }
+      return parsed;
     } catch {
       return null;
     }
@@ -27,10 +31,11 @@ export default function Recipe({ recipe, isSaved, onSave }) {
   if (typeof recipe === "string") {
     // Try direct JSON parse first
     try {
-      parsed = JSON.parse(recipe);
+      const direct = JSON.parse(recipe);
+      parsed = Array.isArray(direct) ? direct[0] || {} : direct;
     } catch {
       // Try to extract JSON from text
-      const extracted = extractFirstJson(recipe);
+      const extracted = extractFirstRecipe(recipe);
       if (extracted) {
         parsed = extracted;
       } else {
