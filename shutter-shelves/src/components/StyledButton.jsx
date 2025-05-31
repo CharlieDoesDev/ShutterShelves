@@ -5,17 +5,23 @@ export default function StyledButton({
   children,
   onClick,
   className = "",
-  type = "button",
   imagePath = "",
   ...props
 }) {
+  // Keyboard accessibility: trigger onClick for Enter/Space
+  function handleKeyDown(e) {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      if (onClick) onClick(e);
+    }
+  }
   return (
-    <button
-      type={type}
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
-      className={`styled-btn styled-btn-circle ${className} ${
-        imagePath && imagePath.length > 0 ? "hidden" : ""
-      }`}
+      onKeyDown={handleKeyDown}
+      className={`styled-btn styled-btn-circle ${className}`}
       {...props}
     >
       {imagePath && imagePath.length > 0 ? (
@@ -30,7 +36,6 @@ export default function StyledButton({
           }}
         />
       ) : (
-        // Default to camera SVG icon if no imagePath and no children
         children || (
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -68,6 +73,6 @@ export default function StyledButton({
           </svg>
         )
       )}
-    </button>
+    </div>
   );
 }
