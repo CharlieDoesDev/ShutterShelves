@@ -160,8 +160,20 @@ export default function CameraWindow({ onCapture, onCancel, onProcess }) {
         <video ref={videoRef} autoPlay playsInline style={{ width: "100%", borderRadius: 18, marginBottom: 18, background: "#e5e7eb" }} />
         <canvas ref={canvasRef} style={{ display: "none" }} />
         <div style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <CameraCaptureButton onCapture={handleCaptureClick} buttonStyle={buttonStyle} />
-          {photos.length > 0 && <FinishPhotosButton onFinish={handleFinish} buttonStyle={buttonStyle} />}
+          <button
+            style={buttonStyle}
+            onClick={handleCaptureClick}
+          >
+            Capture Photo
+          </button>
+          {photos.length > 0 && (
+            <button
+              style={{ ...buttonStyle, marginTop: 12 }}
+              onClick={handleFinish}
+            >
+              Finish Taking Photos
+            </button>
+          )}
           <button style={cancelButtonStyle} onClick={onCancel}>Cancel</button>
         </div>
       </div>
