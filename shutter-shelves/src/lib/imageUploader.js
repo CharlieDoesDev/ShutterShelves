@@ -22,7 +22,7 @@ export function readFileAsBase64(file) {
 /**
  * Handles the full image upload flow: file selection, base64 conversion, and callback.
  * Supports single or multiple files, and returns an array of { dataUrl, base64 } objects.
- * @param {File|File[]} fileOrFiles
+ * @param {FileList|File|File[]} fileOrFiles
  * @returns {Promise<Array<{dataUrl: string, base64: string}>>}
  */
 export async function handleImageUpload(fileOrFiles) {
@@ -39,6 +39,7 @@ export async function handleImageUpload(fileOrFiles) {
   // Filter out any non-File objects
   files = files.filter((f) => f instanceof File);
   if (!files.length) return [];
+  // Always return a flat array of { dataUrl, base64 } for compatibility with App.jsx
   const results = await Promise.all(
     files.map(async (file) => {
       const { base64, dataUrl } = await readFileAsBase64(file);
