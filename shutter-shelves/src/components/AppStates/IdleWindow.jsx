@@ -1,8 +1,8 @@
 import React from "react";
-import StyledButton from "../StyledButton";
-import DisplayRecipes from "../../Recipe/DisplayRecipes";
-import SlideInLogo from "../SlideInLogo";
-import CenterPanel from "../../CenterPanel";
+import StyledButton from "../SimpleElements/StyledButton";
+import DisplayRecipes from "../Recipe/DisplayRecipes";
+import SlideInLogo from "../SimpleElements/SlideInLogo";
+import CenterPanel from "../SimpleContainers/CenterPanel";
 import "./IdleWindow.css";
 
 export default function IdleWindow({ onStart, recipes }) {
