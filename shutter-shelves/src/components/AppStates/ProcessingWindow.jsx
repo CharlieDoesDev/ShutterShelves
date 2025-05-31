@@ -9,12 +9,11 @@ export default function ProcessingWindow({ images, onDone, onProcessed }) {
     let cancelled = false;
     async function processImages() {
       // Show progress bar while processing
-      asyncProgressBar((p) => {
+      await asyncProgressBar((p) => {
         if (!cancelled) setProgress(p);
       });
       // After progress bar, call Gemini API
       try {
-        // Import Gemini logic from CameraWindow (refactor if needed)
         const { dataUrlToBase64Object } = await import("../../lib/imageUploader");
         const PROXY = "https://pantry-pilot-proxy.shuttershells.workers.dev";
         const base64Array = images.map(photo => dataUrlToBase64Object(photo.dataUrl).base64);
@@ -32,10 +31,18 @@ export default function ProcessingWindow({ images, onDone, onProcessed }) {
         });
         if (!recipesRes.ok) throw new Error("Gemini recipe error: " + recipesRes.status);
         const recipesData = await recipesRes.json();
-        if (onProcessed) onProcessed({ pantryItems, recipesText: recipesData.completion, images });
+        // Try to parse Gemini's recipesData.completion into an array of recipe objects
+        let parsedRecipes = [];
+        try {
+          parsedRecipes = JSON.parse(recipesData.completion);
+          if (!Array.isArray(parsedRecipes)) parsedRecipes = [parsedRecipes];
+        } catch {
+          parsedRecipes = [{ title: "Recipes", ingredients: pantryItems || [], steps: [recipesData.completion] }];
+        }
+        if (onProcessed) onProcessed({ pantryItems, recipesText: recipesData.completion, images, parsedRecipes });
       } catch (err) {
         alert("Gemini API error: " + err.message);
-        if (onProcessed) onProcessed({ pantryItems: [], recipesText: "", images });
+        if (onProcessed) onProcessed({ pantryItems: [], recipesText: "", images, parsedRecipes: [] });
       }
       if (!cancelled && onDone) onDone();
     }

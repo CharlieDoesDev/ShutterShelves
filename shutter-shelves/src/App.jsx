@@ -35,7 +35,12 @@ export default function App() {
   };
 
   // Handler for Gemini processing results (from ProcessingWindow)
-  const handleGeminiProcess = ({ pantryItems, recipesText, images }) => {
+  const handleGeminiProcess = ({
+    pantryItems,
+    recipesText,
+    images,
+    parsedRecipes,
+  }) => {
     setImages(images || []);
     let parsedRecipes = [];
     try {
