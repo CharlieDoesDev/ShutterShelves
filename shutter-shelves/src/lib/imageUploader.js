@@ -27,7 +27,18 @@ export function readFileAsBase64(file) {
  */
 export async function handleImageUpload(fileOrFiles) {
   if (!fileOrFiles) return [];
-  const files = Array.isArray(fileOrFiles) ? fileOrFiles : [fileOrFiles];
+  // Accept FileList, single File, or array of Files
+  let files = [];
+  if (Array.isArray(fileOrFiles)) {
+    files = fileOrFiles;
+  } else if (fileOrFiles instanceof FileList) {
+    files = Array.from(fileOrFiles);
+  } else if (fileOrFiles instanceof File) {
+    files = [fileOrFiles];
+  }
+  // Filter out any non-File objects
+  files = files.filter((f) => f instanceof File);
+  if (!files.length) return [];
   const results = await Promise.all(
     files.map(async (file) => {
       const { base64, dataUrl } = await readFileAsBase64(file);
