@@ -3,6 +3,7 @@ import StyledButton from "./components/StyledButton";
 import { analyzeImageWithAzure } from "./lib/azure-vision";
 import { getRecipesFromOpenAI } from "./lib/azure-openai";
 import { handleImageUpload } from "./lib/imageUploader";
+import CenterPanel from "./components/CenterPanel";
 
 export default function App() {
   // App state
@@ -120,18 +121,20 @@ export default function App() {
             onChange={onFileChange}
             className="hidden"
           />
-          <StyledButton
-            className="bg-gradient-to-tr from-blue-500 to-purple-500 text-white rounded-full w-20 h-20 flex items-center justify-center shadow-lg active:scale-95 transition-all mb-6 mx-auto"
-            onClick={() => inputRef.current.click()}
-            aria-label="Open Camera"
-            style={{
-              borderRadius: "50%",
-              width: "5rem",
-              height: "5rem",
-              padding: 0,
-            }}
-            imagePath={image}
-          />
+          <CenterPanel>
+            <StyledButton
+              className="bg-gradient-to-tr from-blue-500 to-purple-500 text-white rounded-full w-20 h-20 flex items-center justify-center shadow-lg active:scale-95 transition-all mb-6 mx-auto"
+              onClick={() => inputRef.current.click()}
+              aria-label="Open Camera"
+              style={{
+                borderRadius: "50%",
+                width: "5rem",
+                height: "5rem",
+                padding: 0,
+              }}
+              imagePath={image}
+            />
+          </CenterPanel>
           {image && (
             <div className="w-full flex flex-col items-center">
               <img
