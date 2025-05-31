@@ -1,10 +1,8 @@
-import React, { useState, useEffect } from "react";
-import ImageUploader from "./components/ImageUploader";
-import PantryResults from "./components/PantryResults";
-import RecipeRecommendations from "./components/RecipeRecommendations";
+import React, { useEffect, useRef, useState } from "react";
+import StyledButton from "./components/StyledButton";
 import { analyzeImageWithAzure } from "./lib/azure-vision";
 import { getRecipesFromOpenAI } from "./lib/azure-openai";
-import StyledButton from "./components/StyledButton";
+import { handleImageUpload } from "./lib/imageUploader";
 
 export default function App() {
   // App state
@@ -15,6 +13,8 @@ export default function App() {
   const [env, setEnv] = useState(null);
   const [loadingEnv, setLoadingEnv] = useState(true);
   const [envError, setEnvError] = useState(null);
+  const [image, setImage] = useState(null);
+  const inputRef = useRef();
 
   // Fetch and decrypt env on mount
   useEffect(() => {
@@ -69,10 +69,18 @@ export default function App() {
     setRecipes([]);
     setShowUploader(true);
     setAppendMode(false);
+    setImage(null);
   }
   function handleAppend() {
     setAppendMode(true);
     setShowUploader(true);
+  }
+
+  async function onFileChange(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const result = await handleImageUpload(file, handleAzureVision, appendMode);
+    if (result && result.dataUrl) setImage(result.dataUrl);
   }
 
   if (loadingEnv) {
@@ -103,46 +111,83 @@ export default function App() {
         aria-hidden="true"
       />
       <div className="min-h-screen w-full bg-gradient-to-br from-[#f8fafc] to-[#e0e7ef] flex flex-col bg-opacity-80">
-        <div className="flex-1 flex flex-col overflow-y-auto">
-          {showUploader ? (
-            <ImageUploader
-              onReset={handleReset}
-              appendMode={appendMode}
-              onAzureVision={handleAzureVision}
-              env={env}
-            />
-          ) : (
-            <div className="flex flex-col items-center w-full px-2 pt-2 pb-8">
-              <div className="w-full flex items-center justify-between mb-2">
-                <div className="flex-1 flex justify-center">
-                  <StyledButton
-                    className="text-blue-400 text-lg font-bold hover:bg-blue-50 transition-all"
-                    onClick={handleReset}
-                    aria-label="Back"
-                  >
-                    ←
-                  </StyledButton>
-                </div>
-                <StyledButton
-                  className="text-xs text-blue-500 underline ml-2"
-                  onClick={handleAppend}
-                  style={{
-                    borderRadius: "0.375rem",
-                    width: "auto",
-                    height: "auto",
-                    fontSize: "1rem",
-                    padding: "0.5rem 1rem",
-                  }}
-                >
-                  Add Another Photo
-                </StyledButton>
-              </div>
-              <div className="w-full max-w-xs mx-auto flex flex-col gap-6 overflow-y-auto">
-                {items.length > 0 && <PantryResults items={items} />}
-                {recipes.length > 0 && (
-                  <RecipeRecommendations recipes={recipes} />
-                )}
-              </div>
+        <div className="flex-1 flex flex-col overflow-y-auto items-center justify-center">
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={onFileChange}
+            className="hidden"
+          />
+          <StyledButton
+            className="bg-gradient-to-tr from-blue-500 to-purple-500 text-white rounded-full w-20 h-20 flex items-center justify-center shadow-lg active:scale-95 transition-all mb-6 mx-auto"
+            onClick={() => inputRef.current.click()}
+            aria-label="Open Camera"
+            style={{
+              borderRadius: "50%",
+              width: "5rem",
+              height: "5rem",
+              padding: 0,
+            }}
+          >
+            {/* Camera icon */}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              className="w-10 h-10"
+            >
+              <circle
+                cx="12"
+                cy="12"
+                r="8"
+                stroke="#fff"
+                strokeWidth="1.5"
+                fill="#60a5fa"
+              />
+              <rect
+                x="8.5"
+                y="7.5"
+                width="7"
+                height="5"
+                rx="2.5"
+                fill="#fff"
+                stroke="#fff"
+                strokeWidth="0.5"
+              />
+              <circle cx="12" cy="10" r="1.5" fill="#60a5fa" />
+              <path
+                d="M9 14c.5 1 2.5 1 3 0"
+                stroke="#fff"
+                strokeWidth="1.2"
+                strokeLinecap="round"
+              />
+            </svg>
+          </StyledButton>
+          {image && (
+            <div className="w-full flex flex-col items-center">
+              <img
+                src={image}
+                alt="Captured"
+                className="rounded-xl shadow-lg w-full max-w-xs object-cover mb-4 border border-gray-200"
+                style={{ aspectRatio: "1/1", background: "#eee" }}
+              />
+              <StyledButton
+                className="text-blue-500 underline text-sm mb-2"
+                onClick={() => setImage(null)}
+                style={{
+                  borderRadius: "0.375rem",
+                  width: "auto",
+                  height: "auto",
+                  fontSize: "1rem",
+                  padding: "0.5rem 1rem",
+                }}
+              >
+                Retake Photo
+              </StyledButton>
             </div>
           )}
         </div>

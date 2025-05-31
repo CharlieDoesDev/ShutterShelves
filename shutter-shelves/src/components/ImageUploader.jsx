@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useRef } from "react";
 import StyledButton from "./StyledButton";
+import { readFileAsBase64 } from "../lib/imageUploader";
 
 export default function ImageUploader({ onReset, appendMode, onAzureVision }) {
   const [image, setImage] = useState(null);
@@ -10,21 +11,17 @@ export default function ImageUploader({ onReset, appendMode, onAzureVision }) {
     async (imgFile) => {
       if (!imgFile) return;
       setLoading(true);
-      const reader = new FileReader();
-      reader.readAsDataURL(imgFile);
-      reader.onloadend = async () => {
-        const b64 = reader.result.split(",")[1];
-        setImage(reader.result);
-        try {
-          if (onAzureVision) {
-            await onAzureVision(b64, appendMode);
-          }
-        } catch (err) {
-          console.error(err);
-        } finally {
-          setLoading(false);
+      try {
+        const { base64, dataUrl } = await readFileAsBase64(imgFile);
+        setImage(dataUrl);
+        if (onAzureVision) {
+          await onAzureVision(base64, appendMode);
         }
-      };
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
     },
     [onAzureVision, appendMode]
   );
