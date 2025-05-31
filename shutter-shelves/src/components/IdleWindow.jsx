@@ -1,6 +1,7 @@
 import React from "react";
 import StyledButton from "./StyledButton";
 import DisplayRecipes from "./DisplayRecipes";
+import SlideInLogo from "./SlideInLogo";
 
 export default function IdleWindow({ onStart, recipes }) {
   return (
@@ -13,6 +14,7 @@ export default function IdleWindow({ onStart, recipes }) {
         justifyContent: "space-between",
       }}
     >
+      <SlideInLogo />
       <div
         style={{
           width: "100%",
