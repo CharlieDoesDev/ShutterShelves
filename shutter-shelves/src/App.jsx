@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import CenterPanel from "./components/SimpleContainers/CenterPanel";
 import CameraWindow from "./components/AppStates/CameraWindow.jsx";
 import ProcessingWindow from "./components/AppStates/ProcessingWindow.jsx";
@@ -27,6 +27,16 @@ export default function App() {
   const [mode, setMode] = useState(MODE_IDLE);
   const [savedRecipes, setSavedRecipes] = useState([]);
   const [activeRecipe, setActiveRecipe] = useState(null);
+  const [envSequence, setEnvSequence] = useState(() => {
+    const stored = window.localStorage.getItem("envSequence");
+    if (stored && stored.length > 0) return stored;
+    const input = window.prompt("Please enter your environment sequence:", "");
+    if (input !== null && input.length > 0) {
+      window.localStorage.setItem("envSequence", input);
+      return input;
+    }
+    return "";
+  });
 
   // Handler for when a picture is captured
   const handleCapture = (imageData) => {
