@@ -63,7 +63,7 @@ export default function App() {
   }
 
   return (
-    <div>
+    <div className="App">
       <CenterPanel>
         <StyledButton onClick={InitiateImages}></StyledButton>
       </CenterPanel>
