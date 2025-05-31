@@ -102,15 +102,15 @@ export default function App() {
   // Main app UI
   return (
     <div className="center-panel-parent relative overflow-hidden">
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        onChange={onFileChange}
-        className="hidden"
-      />
       <CenterPanel>
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={onFileChange}
+          className="hidden"
+        />
         <StyledButton
           className="camera-btn mb-6 mx-auto"
           onClick={() => inputRef.current.click()}

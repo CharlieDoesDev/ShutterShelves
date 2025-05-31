@@ -50,3 +50,7 @@
   background: linear-gradient(135deg, #f8fafc 0%, #e0e7ef 100%);
   /* Optional: add bg-opacity if needed */
 }
+
+.hidden {
+  display: none !important;
+}
