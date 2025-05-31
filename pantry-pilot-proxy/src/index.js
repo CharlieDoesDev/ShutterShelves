@@ -168,6 +168,23 @@ Description(s):\n"${mergedCaption}"`;
           headers: { "Content-Type": "application/json" },
         }));
       }
+      else if (path === "/vision") {
+        // Proxy Gemini Vision API (image captioning, etc.)
+        const body = await request.json();
+        const geminiVisionRes = await fetch(
+          "https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=" + env.GEMINI_API_KEY,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body)
+          }
+        );
+        const visionData = await geminiVisionRes.text();
+        return withCors(new Response(visionData, {
+          status: geminiVisionRes.status,
+          headers: { "Content-Type": "application/json" },
+        }));
+      }
       else {
         return withCors(new Response("Not Found", { status: 404 }));
       }
