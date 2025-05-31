@@ -1,6 +1,6 @@
 import React from "react";
 import StyledButton from "./StyledButton";
-import DisplayRecipes from "./DisplayRecipes";
+import DisplayRecipes from "./Recipe/DisplayRecipes";
 import SlideInLogo from "./SlideInLogo";
 
 export default function IdleWindow({ onStart, recipes }) {
