@@ -4,6 +4,7 @@ import CameraCounter from "../CameraWindowComponents/CameraCounter";
 import CameraCaptureButton from "../CameraWindowComponents/CameraCaptureButton";
 import FinishPhotosButton from "../CameraWindowComponents/FinishPhotosButton";
 import PhotoGrid from "../CameraWindowComponents/PhotoGrid";
+import { getNextDownsampleFactor, downsampleDataUrl, DOWNSAMPLE_FACTORS } from "../../lib/imageProcessing";
 
 export default function CameraWindow({ onCapture, onCancel, onProcess }) {
   const videoRef = useRef(null);
@@ -12,6 +13,7 @@ export default function CameraWindow({ onCapture, onCancel, onProcess }) {
   const [photos, setPhotos] = useState([]);
   const [showGrid, setShowGrid] = useState(false);
   const [selected, setSelected] = useState([]);
+  const [downsample, setDownsample] = useState(1);
 
   // Request camera access on mount
   useEffect(() => {
@@ -68,8 +70,16 @@ export default function CameraWindow({ onCapture, onCancel, onProcess }) {
   };
 
   // Process selected photos
-  const handleProcess = () => {
-    const selectedPhotos = selected.map((i) => photos[i]);
+  const handleProcess = async () => {
+    // Downsample all selected photos according to the selected downsample factor
+    const selectedPhotos = await Promise.all(selected.map(async (i) => {
+      const photo = photos[i];
+      if (downsample !== 1) {
+        const dataUrl = await downsampleDataUrl(photo.dataUrl, downsample);
+        return { ...photo, dataUrl };
+      }
+      return photo;
+    }));
     if (onProcess) onProcess(selectedPhotos);
     if (onCapture) onCapture(selectedPhotos);
   };
@@ -156,6 +166,27 @@ export default function CameraWindow({ onCapture, onCancel, onProcess }) {
               onToggle={handleToggle}
               buttonStyle={buttonStyle}
             />
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 18, justifyContent: "center" }}>
+            <span style={{ fontWeight: 600, fontSize: 15, marginRight: 8 }}>Downsample:</span>
+            <select
+              value={downsample}
+              onChange={e => setDownsample(Number(e.target.value))}
+              style={{
+                fontSize: 15,
+                padding: "8px 18px",
+                borderRadius: 12,
+                border: "1px solid #a5b4fc",
+                background: "#f3f4f6",
+                color: "#374151",
+                fontWeight: 600,
+                outline: "none"
+              }}
+            >
+              {[0.25, 0.5, 0.75, 0.85, 0.95, 1].map(f => (
+                <option key={f} value={f}>{f}x</option>
+              ))}
+            </select>
           </div>
           <div
             style={{
