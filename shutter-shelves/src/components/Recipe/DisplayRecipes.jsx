@@ -1,7 +1,7 @@
 import React from "react";
-import Recipe from "./Recipe";
+import "./DisplayRecipes.css";
 
-export default function DisplayRecipes({ recipes, onSaveRecipe, savedRecipes }) {
+export default function DisplayRecipes({ recipes }) {
   if (!recipes || recipes.length === 0) {
     return (
       <div style={{ color: "#888", textAlign: "center" }}>
@@ -15,12 +15,9 @@ export default function DisplayRecipes({ recipes, onSaveRecipe, savedRecipes }) 
       style={{ maxWidth: 500, margin: "0 auto" }}
     >
       {recipes.map((recipe, idx) => (
-        <Recipe
-          key={idx}
-          recipe={recipe}
-          isSaved={savedRecipes && savedRecipes.some(r => r.title === (recipe.title || (typeof recipe === 'string' ? recipe : '')))}
-          onSave={onSaveRecipe}
-        />
+        <p key={idx} className="display-recipes-debug">
+          {JSON.stringify(recipe, null, 2)}
+        </p>
       ))}
     </div>
   );
