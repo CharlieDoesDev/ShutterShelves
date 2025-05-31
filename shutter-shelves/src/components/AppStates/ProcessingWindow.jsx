@@ -17,6 +17,41 @@ export default function ProcessingWindow({ images, onDone, onProcessed }) {
         const { dataUrlToBase64Object } = await import("../../lib/imageUploader");
         const PROXY = "https://pantry-pilot-proxy.shuttershells.workers.dev";
         const base64Array = images.map(photo => dataUrlToBase64Object(photo.dataUrl).base64);
+        // Improved prompt for Gemini: ask for a general description first
+        const visionPrompt = "Describe this image in detail. If it does not contain food, pantry, or kitchen items, say so clearly.";
+        // Get captions for all images
+        const captions = [];
+        for (const base64 of base64Array) {
+          const res = await fetch(
+            `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=API_KEY_PLACEHOLDER`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                contents: [
+                  {
+                    parts: [
+                      { text: visionPrompt },
+                      { inline_data: { mime_type: "image/jpeg", data: base64 } }
+                    ]
+                  }
+                ]
+              })
+            }
+          );
+          const data = await res.json();
+          const caption = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+          captions.push(caption);
+        }
+        // If any caption does not mention food/pantry/kitchen, warn and abort
+        const isFoodRelated = captions.some(caption => /food|pantry|kitchen|ingredient|can|jar|bottle|spice|snack|grain|produce|vegetable|fruit|bread|cereal|rice|pasta|sauce|oil|salt|pepper|sugar/i.test(caption));
+        if (!isFoodRelated) {
+          alert("No food, pantry, or kitchen items detected in the photo(s). Please try again with a clear photo of your pantry or food items.");
+          if (onProcessed) onProcessed({ pantryItems: [], recipesText: '', images, parsedRecipes: [] });
+          if (!cancelled && onDone) onDone();
+          return;
+        }
+        // Gemini pantry/recipe logic
         const pantryRes = await fetch(`${PROXY}/pantry`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
