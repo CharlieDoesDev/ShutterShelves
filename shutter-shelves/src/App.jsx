@@ -101,42 +101,40 @@ export default function App() {
 
   // Main app UI
   return (
-    <div className="min-h-screen w-full relative overflow-hidden">
-      <div className="min-h-screen w-full bg-gradient-to-br from-[#f8fafc] to-[#e0e7ef] flex flex-col bg-opacity-80">
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          onChange={onFileChange}
-          className="hidden"
+    <div className="center-panel-parent relative overflow-hidden">
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={onFileChange}
+        className="hidden"
+      />
+      <CenterPanel>
+        <StyledButton
+          className="camera-btn mb-6 mx-auto"
+          onClick={() => inputRef.current.click()}
+          aria-label="Open Camera"
+          imagePath={image}
         />
-        <CenterPanel>
-          <StyledButton
-            className="camera-btn mb-6 mx-auto"
-            onClick={() => inputRef.current.click()}
-            aria-label="Open Camera"
-            imagePath={image}
-          />
-          {image && (
-            <div className="w-full flex flex-col items-center">
-              <img
-                src={image}
-                alt="Captured"
-                className="rounded-xl shadow-lg w-full max-w-xs object-cover mb-4 border border-gray-200"
-                style={{ aspectRatio: "1/1", background: "#eee" }}
-              />
-              <StyledButton
-                className="retake-btn mb-2"
-                onClick={() => setImage(null)}
-                imagePath={null}
-              >
-                Retake Photo
-              </StyledButton>
-            </div>
-          )}
-        </CenterPanel>
-      </div>
+        {image && (
+          <div className="w-full flex flex-col items-center">
+            <img
+              src={image}
+              alt="Captured"
+              className="rounded-xl shadow-lg w-full max-w-xs object-cover mb-4 border border-gray-200"
+              style={{ aspectRatio: "1/1", background: "#eee" }}
+            />
+            <StyledButton
+              className="retake-btn mb-2"
+              onClick={() => setImage(null)}
+              imagePath={null}
+            >
+              Retake Photo
+            </StyledButton>
+          </div>
+        )}
+      </CenterPanel>
     </div>
   );
 }
