@@ -17,8 +17,8 @@ export default function ProcessingWindow({ images, onDone, onProcessed }) {
         const { dataUrlToBase64Object } = await import("../../lib/imageUploader");
         const PROXY = "https://pantry-pilot-proxy.shuttershells.workers.dev";
         const base64Array = images.map(photo => dataUrlToBase64Object(photo.dataUrl).base64);
-        // Improved prompt for Gemini: ask for a general description first
-        const visionPrompt = "Describe this image in detail. If it does not contain food, pantry, or kitchen items, say so clearly.";
+        // Refined prompt for Gemini Vision
+        const visionPrompt = `You are a kitchen assistant. Describe this image in detail, focusing on identifying all visible food, pantry, or kitchen items. If the image does not contain any food, pantry, or kitchen items, say: 'No food, pantry, or kitchen items detected.'`;
         // Get captions for all images
         const captions = [];
         for (const base64 of base64Array) {
@@ -43,8 +43,8 @@ export default function ProcessingWindow({ images, onDone, onProcessed }) {
           const caption = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
           captions.push(caption);
         }
-        // If any caption does not mention food/pantry/kitchen, warn and abort
-        const isFoodRelated = captions.some(caption => /food|pantry|kitchen|ingredient|can|jar|bottle|spice|snack|grain|produce|vegetable|fruit|bread|cereal|rice|pasta|sauce|oil|salt|pepper|sugar/i.test(caption));
+        // If any caption says no food/pantry/kitchen, warn and abort
+        const isFoodRelated = captions.some(caption => !/no food, pantry, or kitchen items detected/i.test(caption) && /food|pantry|kitchen|ingredient|can|jar|bottle|spice|snack|grain|produce|vegetable|fruit|bread|cereal|rice|pasta|sauce|oil|salt|pepper|sugar/i.test(caption));
         if (!isFoodRelated) {
           alert("No food, pantry, or kitchen items detected in the photo(s). Please try again with a clear photo of your pantry or food items.");
           if (onProcessed) onProcessed({ pantryItems: [], recipesText: '', images, parsedRecipes: [] });

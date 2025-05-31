@@ -42,23 +42,26 @@ export default function App() {
     parsedRecipes: parsedRecipesFromProcessing,
   }) => {
     setImages(images || []);
-    let parsedRecipes = [];
-    try {
-      parsedRecipes = JSON.parse(recipesText);
-      if (!Array.isArray(parsedRecipes)) parsedRecipes = [parsedRecipes];
-    } catch {
-      parsedRecipes =
-        parsedRecipesFromProcessing && parsedRecipesFromProcessing.length > 0
-          ? parsedRecipesFromProcessing
-          : [
-              {
-                title: "Recipes",
-                ingredients: pantryItems || [],
-                steps: [recipesText],
-              },
-            ];
+    // If parsedRecipesFromProcessing exists and is non-empty, use it
+    if (parsedRecipesFromProcessing && parsedRecipesFromProcessing.length > 0) {
+      setRecipes(parsedRecipesFromProcessing);
+    } else {
+      // Fallback: try to parse recipesText as JSON
+      let parsedRecipes = [];
+      try {
+        parsedRecipes = JSON.parse(recipesText);
+        if (!Array.isArray(parsedRecipes)) parsedRecipes = [parsedRecipes];
+      } catch {
+        parsedRecipes = [
+          {
+            title: "Recipes",
+            ingredients: pantryItems || [],
+            steps: [recipesText],
+          },
+        ];
+      }
+      setRecipes(parsedRecipes);
     }
-    setRecipes(parsedRecipes);
     setMode(MODE_DISPLAY_OUTPUT);
   };
 
