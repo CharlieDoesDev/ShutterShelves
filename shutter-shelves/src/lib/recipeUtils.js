@@ -155,7 +155,12 @@ export function getSingleRecipePrompt(items) {
 export function getRecipePrompts(items, n) {
   const prompts = [];
   for (let i = 0; i < n; i++) {
-    prompts.push(getSingleRecipePrompt(items));
+    prompts.push(
+      getSingleRecipePrompt(items) +
+        ` This is recipe number ${
+          i + 1
+        } of ${n}. Make it unique and do not repeat any previous recipe.`
+    );
   }
   return prompts;
 }
