@@ -69,34 +69,42 @@ export default function ProcessingWindow({ images, onDone, onProcessed }) {
         if (!pantryRes.ok)
           throw new Error("Gemini pantry error: " + pantryRes.status);
         const pantryItems = await pantryRes.json();
-        const recipesRes = await fetch(`${PROXY}/recipes`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ items: pantryItems }),
-        });
-        if (!recipesRes.ok)
-          throw new Error("Gemini recipe error: " + recipesRes.status);
-        const recipesData = await recipesRes.json();
-        // Try to parse Gemini's recipesData.completion into an array of recipe objects
-        let parsedRecipes = [];
-        try {
-          parsedRecipes = JSON.parse(recipesData.completion);
-          if (!Array.isArray(parsedRecipes)) parsedRecipes = [parsedRecipes];
-        } catch {
-          parsedRecipes = [
-            {
-              title: "Recipes",
-              ingredients: pantryItems || [],
-              steps: [recipesData.completion],
-            },
-          ];
-        }
+        // --- NEW: Request N recipes as separate prompts ---
+        const { getRecipePrompts, cleanGeminiJsonString } = await import(
+          "../../lib/recipeUtils"
+        );
+        const N = 5; // Number of recipes to generate
+        const prompts = getRecipePrompts(pantryItems, N);
+        // Send all prompts in parallel
+        const recipeResponses = await Promise.all(
+          prompts.map(async (prompt) => {
+            const res = await fetch(`${PROXY}/recipes`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ items: pantryItems, prompt }),
+            });
+            if (!res.ok) throw new Error("Gemini recipe error: " + res.status);
+            const data = await res.json();
+            // Clean and parse each response as a single recipe object
+            let recipeObj = null;
+            try {
+              recipeObj = JSON.parse(cleanGeminiJsonString(data.completion));
+            } catch {
+              recipeObj = {
+                title: "Recipe Parse Error",
+                steps: [data.completion],
+              };
+            }
+            return recipeObj;
+          })
+        );
+        // --- END NEW ---
         if (onProcessed)
           onProcessed({
             pantryItems,
-            recipesText: recipesData.completion,
+            recipesText: JSON.stringify(recipeResponses, null, 2),
             images,
-            parsedRecipes,
+            parsedRecipes: recipeResponses,
             captions,
           });
       } catch (err) {

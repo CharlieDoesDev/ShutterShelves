@@ -125,3 +125,28 @@ export function aggressiveGeminiClean(raw) {
   }
   return str.trim();
 }
+
+/**
+ * Given a list of pantry items, generate a strict prompt for Gemini to return a single recipe as a JSON object.
+ * @param {string[]} items - Pantry items
+ * @returns {string} - The strict prompt
+ */
+export function getSingleRecipePrompt(items) {
+  return `Given these pantry items: ${items.join(
+    ", "
+  )}, generate ONE creative recipe as a JSON object. Respond ONLY with a single JSON object, no markdown, no explanation, no code block, no extra text. The object should have "Title", "Ingredients", and "Instructions" fields. Do not wrap your response in triple-backticks or any other formatting.`;
+}
+
+/**
+ * Given a list of pantry items, generate prompts for Gemini to return N recipes, one per prompt.
+ * @param {string[]} items - Pantry items
+ * @param {number} n - Number of recipes
+ * @returns {string[]} - Array of prompts
+ */
+export function getRecipePrompts(items, n) {
+  const prompts = [];
+  for (let i = 0; i < n; i++) {
+    prompts.push(getSingleRecipePrompt(items));
+  }
+  return prompts;
+}
