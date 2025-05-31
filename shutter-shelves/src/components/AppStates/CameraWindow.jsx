@@ -5,6 +5,30 @@ import CameraCaptureButton from "../CameraWindowComponents/CameraCaptureButton";
 import FinishPhotosButton from "../CameraWindowComponents/FinishPhotosButton";
 import PhotoGrid from "../CameraWindowComponents/PhotoGrid";
 import { getNextDownsampleFactor, downsampleDataUrl, DOWNSAMPLE_FACTORS } from "../../lib/imageProcessing";
+import { dataUrlToBase64Object } from "../../lib/imageUploader";
+
+const PROXY = "https://pantry-pilot-proxy.shuttershells.workers.dev";
+
+async function extractPantryItemsFromGemini(base64Array) {
+  const res = await fetch(`${PROXY}/pantry`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ imagesBase64: base64Array }),
+  });
+  if (!res.ok) throw new Error("Gemini pantry error: " + res.status);
+  return res.json(); // array of items
+}
+
+async function getGeminiRecipes(items) {
+  const res = await fetch(`${PROXY}/recipes`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ items }),
+  });
+  if (!res.ok) throw new Error("Gemini recipe error: " + res.status);
+  const data = await res.json();
+  return data.completion;
+}
 
 export default function CameraWindow({ onCapture, onCancel, onProcess }) {
   const videoRef = useRef(null);
@@ -80,8 +104,21 @@ export default function CameraWindow({ onCapture, onCancel, onProcess }) {
       }
       return photo;
     }));
-    if (onProcess) onProcess(selectedPhotos);
-    if (onCapture) onCapture(selectedPhotos);
+    // Convert all selected photos to base64
+    const base64Array = selectedPhotos.map(photo => dataUrlToBase64Object(photo.dataUrl).base64);
+    if (base64Array.length > 0) {
+      try {
+        const pantryItems = await extractPantryItemsFromGemini(base64Array);
+        const recipesText = await getGeminiRecipes(pantryItems);
+        if (onProcess) onProcess({ pantryItems, recipesText, images: selectedPhotos });
+        if (onCapture) onCapture(selectedPhotos);
+      } catch (err) {
+        alert("Gemini API error: " + err.message);
+      }
+    } else {
+      if (onProcess) onProcess([]);
+      if (onCapture) onCapture([]);
+    }
   };
 
   // Cancel from grid view
