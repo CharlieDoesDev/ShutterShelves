@@ -3,6 +3,7 @@ import StyledButton from "./components/StyledButton";
 import CenterPanel from "./components/CenterPanel";
 import CameraWindow from "./components/CameraWindow";
 import ProcessingWindow from "./components/ProcessingWindow";
+import DisplayOutput from "./components/DisplayOutput";
 import { asyncProgressBar } from "./lib/Util.js";
 import SlideInLogo from "./components/SlideInLogo";
 
@@ -10,6 +11,7 @@ import SlideInLogo from "./components/SlideInLogo";
 const MODE_IDLE = "idle";
 const MODE_TAKING_PICTURE = "taking-picture";
 const MODE_PROCESSING = "processing";
+const MODE_DISPLAY_OUTPUT = "display-output";
 
 export default function App() {
   const [images, setImages] = useState([]);
@@ -23,7 +25,7 @@ export default function App() {
 
   // Handler for canceling camera
   const handleCancel = () => setMode(MODE_IDLE);
-  const handleProcessingDone = () => setMode(MODE_IDLE);
+  const handleProcessingDone = () => setMode(MODE_DISPLAY_OUTPUT);
 
   return (
     <div className="Container">
@@ -43,6 +45,11 @@ export default function App() {
       {mode === MODE_PROCESSING && (
         <CenterPanel>
           <ProcessingWindow onDone={handleProcessingDone} />
+        </CenterPanel>
+      )}
+      {mode === MODE_DISPLAY_OUTPUT && (
+        <CenterPanel>
+          <DisplayOutput images={images} />
         </CenterPanel>
       )}
     </div>
