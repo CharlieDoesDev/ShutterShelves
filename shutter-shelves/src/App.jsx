@@ -65,17 +65,13 @@ export default function App() {
       {/* Cookbook button, always top right */}
       <CookbookButton onClick={handleViewCookbook} />
       {mode === MODE_IDLE && (
-        <CenterPanel>
-          <IdleWindow
-            onStart={() => setMode(MODE_TAKING_PICTURE)}
-            recipes={recipes}
-          />
-        </CenterPanel>
+        <IdleWindow
+          onStart={() => setMode(MODE_TAKING_PICTURE)}
+          recipes={recipes}
+        />
       )}
       {mode === MODE_TAKING_PICTURE && (
-        <CenterPanel>
-          <CameraWindow onCapture={handleCapture} onCancel={handleCancel} />
-        </CenterPanel>
+        <CameraWindow onCapture={handleCapture} onCancel={handleCancel} />
       )}
       {mode === MODE_PROCESSING && (
         <CenterPanel>
