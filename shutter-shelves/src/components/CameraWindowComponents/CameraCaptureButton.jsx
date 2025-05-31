@@ -1,5 +1,5 @@
 import React from "react";
-import StyledButton from "../StyledButton";
+import StyledButton from "../SimpleElements/StyledButton";
 
 export default function CameraCaptureButton({ onCapture, disabled }) {
   return (

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import CenterPanel from "./components/CenterPanel";
 import CameraWindow from "./components/CameraWindow";
-import ProcessingWindow from "./components/ProcessingWindow";
+import ProcessingWindow from "./components/SimpleElements/AppStates/ProcessingWindow.jsx";
 import DisplayOutput from "./components/Recipe/DisplayOutput.jsx";
-import IdleWindow from "./components/IdleWindow";
+import IdleWindow from "./components/SimpleElements/AppStates/IdleWindow.jsx";
 import {
   asyncProgressBar,
   generateAnalysis,
