@@ -1,104 +1,78 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import StyledButton from "./components/StyledButton";
-import { analyzeImageWithAzure } from "./lib/azure-vision";
-import { getRecipesFromOpenAI } from "./lib/azure-openai";
-import { handleImageUpload } from "./lib/imageUploader";
 
 export default function App() {
-  // App state
-  const [items, setItems] = useState([]);
-  const [recipes, setRecipes] = useState([]);
+  const [images, setImages] = useState([]); // Array of { dataUrl, analysis, recipes }
   const [appendMode, setAppendMode] = useState(false);
   const [showUploader, setShowUploader] = useState(true);
-  const [env, setEnv] = useState(null);
-  const [loadingEnv, setLoadingEnv] = useState(true);
-  const [envError, setEnvError] = useState(null);
-  const [image, setImage] = useState(null);
+  const [error, setError] = useState(null);
   const inputRef = useRef();
 
-  // Fetch and decrypt env on mount
-  useEffect(() => {
-    async function fetchAndDecryptEnv() {
-      try {
-        const res = await fetch(import.meta.env.BASE_URL + "config.env.enc");
-        if (!res.ok) throw new Error("Failed to fetch encrypted env");
-        const enc = await res.arrayBuffer();
-        // TODO: Implement decryptEnv to return a JS object from ArrayBuffer
-        const decrypted = await decryptEnv(enc); // You must implement this function
-        setEnv(decrypted);
-        setLoadingEnv(false);
-      } catch (err) {
-        setEnvError(err.message);
-        setLoadingEnv(false);
-      }
-    }
-    fetchAndDecryptEnv();
-  }, []);
+  // Placeholder analysis generator
+  function generateAnalysis() {
+    const items = [
+      "canned beans",
+      "pasta",
+      "tomato sauce",
+      "olive oil",
+      "salt",
+      "pepper",
+      "rice",
+      "spices",
+    ];
+    // Randomly select 3-6 items
+    const count = Math.floor(Math.random() * 4) + 3;
+    return items.sort(() => 0.5 - Math.random()).slice(0, count);
+  }
 
-  async function handleAzureVision(imageBase64, append) {
-    try {
-      if (!env) throw new Error("Environment not loaded");
-      // Only call Azure Vision to extract items from the image
-      const visionResult = await analyzeImageWithAzure(imageBase64, env);
-      const itemsExtracted = visionResult.tags?.map((t) => t.name) || [];
-      setItems(
-        append ? (prev) => [...prev, ...itemsExtracted] : itemsExtracted
-      );
-      console.log("Extracted items:", itemsExtracted);
+  // Placeholder recipe generator
+  function generateRecipes(analysis) {
+    return [
+      {
+        title: "Pantry Pasta",
+        ingredients: analysis.slice(0, 3),
+        steps: ["Boil pasta.", "Heat sauce.", "Combine and serve."],
+      },
+      {
+        title: "Quick Rice Bowl",
+        ingredients: analysis.slice(0, 2),
+        steps: ["Cook rice.", "Add toppings.", "Enjoy!"],
+      },
+    ];
+  }
 
-      // Only call Gemini to generate recipes from the extracted items
-      if (itemsExtracted.length === 0) {
-        setRecipes([]);
-        return;
-      }
-      const recipeResult = await getRecipesFromOpenAI(itemsExtracted, env);
-      console.log("Gemini recipe completion:", recipeResult);
-      setRecipes([recipeResult.completion]);
-      setEnvError(null); // Clear any previous error
-    } catch (err) {
-      // Show a generic error message, not OpenAI-specific
-      setEnvError(
-        "A problem occurred while generating recipes. Please wait and try again."
-      );
-      console.error(err);
-    }
+  async function onFileChange(e) {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+    setError(null);
+    const newImages = await Promise.all(
+      files.map(async (file) => {
+        const dataUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+        // Generate placeholder analysis and recipes
+        const analysis = generateAnalysis();
+        const recipes = generateRecipes(analysis);
+        return { dataUrl, analysis, recipes };
+      })
+    );
+    setImages((prev) => (appendMode ? [...prev, ...newImages] : newImages));
   }
 
   function handleReset() {
-    setItems([]);
-    setRecipes([]);
+    setImages([]);
     setShowUploader(true);
     setAppendMode(false);
-    setImage(null);
+    setError(null);
   }
   function handleAppend() {
     setAppendMode(true);
     setShowUploader(true);
   }
 
-  async function onFileChange(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    const result = await handleImageUpload(file, handleAzureVision, appendMode);
-    if (result && result.dataUrl) setImage(result.dataUrl);
-  }
-
-  if (loadingEnv) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        Loading configuration...
-      </div>
-    );
-  }
-  if (envError) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-red-500">
-        {envError}
-      </div>
-    );
-  }
-
-  // Main app UI
   return (
     <div className="min-h-screen w-full relative overflow-hidden">
       {/* Blurry food background */}
@@ -117,6 +91,7 @@ export default function App() {
             type="file"
             accept="image/*"
             capture="environment"
+            multiple
             onChange={onFileChange}
             className="hidden"
           />
@@ -130,19 +105,66 @@ export default function App() {
               height: "5rem",
               padding: 0,
             }}
-            imagePath={image}
-          />
-          {image && (
-            <div className="w-full flex flex-col items-center">
-              <img
-                src={image}
-                alt="Captured"
-                className="rounded-xl shadow-lg w-full max-w-xs object-cover mb-4 border border-gray-200"
-                style={{ aspectRatio: "1/1", background: "#eee" }}
-              />
-              <StyledButton
+            imagePath={null}
+          >
+            {images.length === 0 ? "Upload/Take Photo(s)" : "Add More"}
+          </StyledButton>
+          {error && <div className="text-red-500 mb-4">{error}</div>}
+          {images.length > 0 && (
+            <div className="w-full flex flex-col items-center gap-8 mt-4">
+              {images.map((img, idx) => (
+                <div
+                  key={idx}
+                  className="w-full max-w-xs flex flex-col items-center bg-white bg-opacity-80 rounded-xl shadow-lg p-4 mb-4"
+                >
+                  <img
+                    src={img.dataUrl}
+                    alt={`Captured ${idx + 1}`}
+                    className="rounded-xl shadow w-full object-cover mb-2 border border-gray-200"
+                    style={{ aspectRatio: "1/1", background: "#eee" }}
+                  />
+                  <div className="mb-2">
+                    <strong>Identified Items:</strong>
+                    <ul className="list-disc list-inside mt-1">
+                      {img.analysis.map((it, i) => (
+                        <li key={i}>{it}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <strong>Recipes:</strong>
+                    <ol className="list-decimal list-inside mt-1 space-y-2">
+                      {img.recipes.map((r, i) => (
+                        <li
+                          key={i}
+                          className="border rounded p-2 bg-gray-50"
+                        >
+                          <div className="font-bold">{r.title}</div>
+                          <div>
+                            <span className="font-semibold">Ingredients:</span>
+                            <ul className="list-disc list-inside ml-4">
+                              {r.ingredients.map((ing, j) => (
+                                <li key={j}>{ing}</li>
+                              ))}
+                            </ul>
+                          </div>
+                          <div className="mt-1">
+                            <span className="font-semibold">Steps:</span>
+                            <ol className="list-decimal list-inside ml-4">
+                              {r.steps.map((step, k) => (
+                                <li key={k}>{step}</li>
+                              ))}
+                            </ol>
+                          </div>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                </div>
+              ))}
+              <button
                 className="text-blue-500 underline text-sm mb-2"
-                onClick={() => setImage(null)}
+                onClick={handleReset}
                 style={{
                   borderRadius: "0.375rem",
                   width: "auto",
@@ -150,74 +172,13 @@ export default function App() {
                   fontSize: "1rem",
                   padding: "0.5rem 1rem",
                 }}
-                imagePath={null}
               >
-                Retake Photo
-              </StyledButton>
+                Reset
+              </button>
             </div>
           )}
         </div>
       </div>
     </div>
   );
-}
-
-// Real decryptEnv: matches encrypt_env.py (AES-GCM, PBKDF2, SHA256, 200k iterations, 16-byte salt, 12-byte nonce)
-async function decryptEnv(encBuffer) {
-  // Prompt for password (show a modal or use prompt for demo)
-  const password = prompt("Enter decryption password:");
-  if (!password) throw new Error("No password provided");
-
-  const bytes = new Uint8Array(encBuffer);
-  const salt = bytes.slice(0, 16);
-  const nonce = bytes.slice(16, 28);
-  const ciphertext = bytes.slice(28);
-
-  // Derive key using PBKDF2 (SHA256, 200k iterations)
-  const keyMaterial = await window.crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(password),
-    "PBKDF2",
-    false,
-    ["deriveKey"]
-  );
-  const key = await window.crypto.subtle.deriveKey(
-    {
-      name: "PBKDF2",
-      salt: salt,
-      iterations: 200000,
-      hash: "SHA-256",
-    },
-    keyMaterial,
-    { name: "AES-GCM", length: 256 },
-    false,
-    ["decrypt"]
-  );
-
-  // Decrypt with AES-GCM
-  let plaintext;
-  try {
-    plaintext = await window.crypto.subtle.decrypt(
-      { name: "AES-GCM", iv: nonce },
-      key,
-      ciphertext
-    );
-  } catch (e) {
-    throw new Error("Decryption failed: wrong password or corrupted file");
-  }
-
-  // Try to parse as .env (key=value) or JSON
-  const text = new TextDecoder().decode(plaintext);
-  try {
-    // Try JSON first
-    return JSON.parse(text);
-  } catch {
-    // Fallback: parse .env format
-    const env = {};
-    text.split(/\r?\n/).forEach((line) => {
-      const m = line.match(/^([A-Za-z0-9_]+)=(.*)$/);
-      if (m) env[m[1]] = m[2];
-    });
-    return env;
-  }
 }
