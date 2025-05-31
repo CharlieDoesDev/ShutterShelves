@@ -8,8 +8,8 @@ import "./IdleWindow.css";
 export default function IdleWindow({ onStart, recipes }) {
   return (
     <div className="idle-window">
+      <SlideInLogo />
       <CenterPanel>
-        <SlideInLogo />
         <div className="idle-start-btn-row">
           <StyledButton onClick={onStart}>Start</StyledButton>
         </div>
