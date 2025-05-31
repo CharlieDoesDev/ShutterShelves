@@ -9,17 +9,21 @@ import {
   generateAnalysis,
   generateRecipes,
 } from "./lib/Util.js";
+import CookbookButton from "./components/SimpleElements/CookbookButton";
 
 // Mode constants
 const MODE_IDLE = "idle";
-const MODE_TAKING_PICTURE = "taking-picture";
-const MODE_PROCESSING = "processing";
+const MODE_TAKING_PICTURE = "processing";
 const MODE_DISPLAY_OUTPUT = "display-output";
+const MODE_COOKBOOK = "cookbook";
+const MODE_RECIPE_VIEW = "recipe-view";
 
 export default function App() {
   const [images, setImages] = useState([]);
   const [recipes, setRecipes] = useState([]);
   const [mode, setMode] = useState(MODE_IDLE);
+  const [savedRecipes, setSavedRecipes] = useState([]);
+  const [activeRecipe, setActiveRecipe] = useState(null);
 
   // Handler for when a picture is captured
   const handleCapture = (imageData) => {
@@ -39,16 +43,37 @@ export default function App() {
     setMode(MODE_DISPLAY_OUTPUT);
   };
 
+  // Save recipe handler
+  const handleSaveRecipe = (recipe) => {
+    if (!savedRecipes.some((r) => r.title === recipe.title)) {
+      setSavedRecipes((prev) => [...prev, recipe]);
+    }
+  };
+
+  // Cookbook navigation
+  const handleViewCookbook = () => setMode(MODE_COOKBOOK);
+  const handleViewRecipe = (recipe) => {
+    setActiveRecipe(recipe);
+    setMode(MODE_RECIPE_VIEW);
+  };
+
   return (
     <div className="Container">
+      {/* Cookbook button, always top right */}
+      <CookbookButton onClick={handleViewCookbook} />
+      <SlideInLogo />
       {mode === MODE_IDLE && (
-        <IdleWindow
-          onStart={() => setMode(MODE_TAKING_PICTURE)}
-          recipes={recipes}
-        />
+        <CenterPanel>
+          <IdleWindow
+            onStart={() => setMode(MODE_TAKING_PICTURE)}
+            recipes={recipes}
+          />
+        </CenterPanel>
       )}
       {mode === MODE_TAKING_PICTURE && (
-        <CameraWindow onCapture={handleCapture} onCancel={handleCancel} />
+        <CenterPanel>
+          <CameraWindow onCapture={handleCapture} onCancel={handleCancel} />
+        </CenterPanel>
       )}
       {mode === MODE_PROCESSING && (
         <CenterPanel>
@@ -57,7 +82,31 @@ export default function App() {
       )}
       {mode === MODE_DISPLAY_OUTPUT && (
         <CenterPanel>
-          <DisplayOutput recipes={recipes} onNext={() => setMode(MODE_IDLE)} />
+          <DisplayOutput
+            recipes={recipes}
+            onNext={() => setMode(MODE_IDLE)}
+            onSaveRecipe={handleSaveRecipe}
+            savedRecipes={savedRecipes}
+          />
+        </CenterPanel>
+      )}
+      {mode === MODE_COOKBOOK && (
+        <CenterPanel>
+          <CookbookView
+            recipes={savedRecipes}
+            onViewRecipe={handleViewRecipe}
+            onBack={() => setMode(MODE_IDLE)}
+          />
+        </CenterPanel>
+      )}
+      {mode === MODE_RECIPE_VIEW && activeRecipe && (
+        <CenterPanel>
+          <RecipeView
+            recipe={activeRecipe}
+            onBack={() => setMode(MODE_COOKBOOK)}
+            isSaved={savedRecipes.some((r) => r.title === activeRecipe.title)}
+            onSave={handleSaveRecipe}
+          />
         </CenterPanel>
       )}
     </div>
