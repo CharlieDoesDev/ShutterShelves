@@ -101,8 +101,8 @@ export default function App() {
 
   // Main app UI
   return (
-    <div className="min-h-screen w-full relative overflow-hidden">
-      <div className="min-h-screen w-full bg-gradient-to-br from-[#f8fafc] to-[#e0e7ef] flex flex-col bg-opacity-80">
+    <div className="center-panel-parent relative overflow-hidden">
+      <CenterPanel>
         <input
           ref={inputRef}
           type="file"
@@ -110,33 +110,32 @@ export default function App() {
           capture="environment"
           onChange={onFileChange}
           className="hidden"
+          display="none"
         />
-        <CenterPanel>
-          <StyledButton
-            className="camera-btn mb-6 mx-auto"
-            onClick={() => inputRef.current.click()}
-            aria-label="Open Camera"
-            imagePath={image}
-          />
-          {image && (
-            <div className="w-full flex flex-col items-center">
-              <img
-                src={image}
-                alt="Captured"
-                className="rounded-xl shadow-lg w-full max-w-xs object-cover mb-4 border border-gray-200"
-                style={{ aspectRatio: "1/1", background: "#eee" }}
-              />
-              <StyledButton
-                className="retake-btn mb-2"
-                onClick={() => setImage(null)}
-                imagePath={null}
-              >
-                Retake Photo
-              </StyledButton>
-            </div>
-          )}
-        </CenterPanel>
-      </div>
+        <StyledButton
+          className="camera-btn mb-6 mx-auto"
+          onClick={() => inputRef.current.click()}
+          aria-label="Open Camera"
+          imagePath={image}
+        />
+        {image && (
+          <div className="w-full flex flex-col items-center">
+            <img
+              src={image}
+              alt="Captured"
+              className="rounded-xl shadow-lg w-full max-w-xs object-cover mb-4 border border-gray-200"
+              style={{ aspectRatio: "1/1", background: "#eee" }}
+            />
+            <StyledButton
+              className="retake-btn mb-2"
+              onClick={() => setImage(null)}
+              imagePath={null}
+            >
+              Retake Photo
+            </StyledButton>
+          </div>
+        )}
+      </CenterPanel>
     </div>
   );
 }
