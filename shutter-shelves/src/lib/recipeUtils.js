@@ -50,3 +50,37 @@ export function cleanGeminiJsonString(raw) {
   str = str.replace(/\\n/g, "");
   return str;
 }
+
+/**
+ * If a recipe object has a 'steps' field that is a single string containing a JSON array (with triple-backticks etc),
+ * this will parse and replace it with the actual array of objects.
+ * @param {object} recipe - The recipe object to fix
+ * @returns {object} - The fixed recipe object
+ */
+export function fixStepsField(recipe) {
+  if (!recipe || !Array.isArray(recipe.steps)) return recipe;
+  // If steps is a single string and looks like a JSON array, try to parse it
+  if (recipe.steps.length === 1 && typeof recipe.steps[0] === "string") {
+    let stepsStr = recipe.steps[0].trim();
+    // Remove triple-backtick and json markers
+    stepsStr = stepsStr.replace(/^```json\s*/i, "").replace(/```$/i, "");
+    // Remove outer quotes if present
+    if (stepsStr.startsWith('"') && stepsStr.endsWith('"')) {
+      stepsStr = stepsStr.slice(1, -1);
+    }
+    // Unescape inner quotes
+    stepsStr = stepsStr.replace(/\\"/g, '"');
+    // Replace \n with real line breaks or remove
+    stepsStr = stepsStr.replace(/\\n/g, "");
+    // Try to parse as JSON array
+    try {
+      const parsed = JSON.parse(stepsStr);
+      if (Array.isArray(parsed)) {
+        return { ...recipe, steps: parsed };
+      }
+    } catch (e) {
+      // If parsing fails, leave as is
+    }
+  }
+  return recipe;
+}
