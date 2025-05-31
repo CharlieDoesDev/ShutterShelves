@@ -4,6 +4,7 @@ import CameraCounter from "./CameraWindowComponents/CameraCounter";
 import CameraCaptureButton from "./CameraWindowComponents/CameraCaptureButton";
 import FinishPhotosButton from "./CameraWindowComponents/FinishPhotosButton";
 import PhotoGrid from "./CameraWindowComponents/PhotoGrid";
+import { getNextDownsampleFactor, downsampleDataUrl, DOWNSAMPLE_FACTORS } from "../lib/imageProcessing";
 
 export default function CameraWindow({ onCapture, onCancel, onProcess }) {
   const videoRef = useRef(null);
@@ -12,6 +13,7 @@ export default function CameraWindow({ onCapture, onCancel, onProcess }) {
   const [photos, setPhotos] = useState([]);
   const [showGrid, setShowGrid] = useState(false);
   const [selected, setSelected] = useState([]);
+  const [downsample, setDownsample] = useState(1);
 
   // Request camera access on mount
   useEffect(() => {
@@ -37,7 +39,7 @@ export default function CameraWindow({ onCapture, onCancel, onProcess }) {
   }, [onCancel, showGrid]);
 
   // Capture image from video
-  const handleCaptureClick = () => {
+  const handleCaptureClick = async () => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
     if (!video || !canvas) return;
@@ -47,6 +49,11 @@ export default function CameraWindow({ onCapture, onCancel, onProcess }) {
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     const dataUrl = canvas.toDataURL("image/png");
     setPhotos((prev) => [...prev, { dataUrl }]);
+  };
+
+  // Downsample button handler
+  const handleCycleDownsample = () => {
+    setDownsample((prev) => getNextDownsampleFactor(prev));
   };
 
   // Finish taking photos, show grid
@@ -66,8 +73,16 @@ export default function CameraWindow({ onCapture, onCancel, onProcess }) {
   };
 
   // Process selected photos
-  const handleProcess = () => {
-    const selectedPhotos = selected.map((i) => photos[i]);
+  const handleProcess = async () => {
+    // Downsample all selected photos according to the selected downsample factor
+    const selectedPhotos = await Promise.all(selected.map(async (i) => {
+      const photo = photos[i];
+      if (downsample !== 1) {
+        const dataUrl = await downsampleDataUrl(photo.dataUrl, downsample);
+        return { ...photo, dataUrl };
+      }
+      return photo;
+    }));
     if (onProcess) onProcess(selectedPhotos);
     if (onCapture) onCapture(selectedPhotos);
   };
@@ -141,6 +156,27 @@ export default function CameraWindow({ onCapture, onCancel, onProcess }) {
           <div style={{ width: "100%", maxHeight: 320, overflowY: "auto", marginBottom: 16 }}>
             <PhotoGrid photos={photos} selected={selected} onToggle={handleToggle} buttonStyle={buttonStyle} />
           </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 18, justifyContent: "center" }}>
+            <span style={{ fontWeight: 600, fontSize: 15, marginRight: 8 }}>Downsample:</span>
+            <select
+              value={downsample}
+              onChange={e => setDownsample(Number(e.target.value))}
+              style={{
+                fontSize: 15,
+                padding: "8px 18px",
+                borderRadius: 12,
+                border: "1px solid #a5b4fc",
+                background: "#f3f4f6",
+                color: "#374151",
+                fontWeight: 600,
+                outline: "none"
+              }}
+            >
+              {[0.25, 0.5, 0.75, 0.85, 0.95, 1].map(f => (
+                <option key={f} value={f}>{f}x</option>
+              ))}
+            </select>
+          </div>
           <div style={{ display: "flex", gap: 12, marginTop: 12, width: "100%", justifyContent: "center" }}>
             <button style={cancelButtonStyle} onClick={handleCancelGrid}>Back</button>
             <button style={buttonStyle} onClick={handleProcess} disabled={selected.length === 0}>
@@ -160,12 +196,30 @@ export default function CameraWindow({ onCapture, onCancel, onProcess }) {
         <video ref={videoRef} autoPlay playsInline style={{ width: "100%", borderRadius: 18, marginBottom: 18, background: "#e5e7eb" }} />
         <canvas ref={canvasRef} style={{ display: "none" }} />
         <div style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <button
-            style={buttonStyle}
-            onClick={handleCaptureClick}
-          >
-            Capture Photo
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 12 }}>
+            <button
+              style={{
+                ...buttonStyle,
+                minWidth: 120,
+                padding: "10px 18px",
+                fontSize: 14,
+                borderRadius: 12,
+                background: downsample === 1 ? "#6366f1" : "#a5b4fc",
+                color: "#fff",
+                margin: 0
+              }}
+              onClick={handleCycleDownsample}
+              title="Cycle Downsampling"
+            >
+              Downsample: {downsample}x
+            </button>
+            <button
+              style={buttonStyle}
+              onClick={handleCaptureClick}
+            >
+              Capture Photo
+            </button>
+          </div>
           {photos.length > 0 && (
             <button
               style={{ ...buttonStyle, marginTop: 12 }}
