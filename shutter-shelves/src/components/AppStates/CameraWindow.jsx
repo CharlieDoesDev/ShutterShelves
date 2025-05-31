@@ -24,8 +24,8 @@ async function extractPantryItemsFromGemini(base64Array) {
 }
 
 async function getGeminiRecipes(items) {
-  // Improved prompt for Gemini to return only JSON
-  const prompt = `Given these pantry items, generate 5 creative recipes as a JSON array of objects. Respond ONLY with a JSON array of recipe objects, no markdown, no explanation, no code block, no extra text. Each object should have \"Title\", \"Ingredients\", and \"Instructions\" fields.`;
+  // Strict prompt for Gemini to return only JSON
+  const prompt = `Given these pantry items, generate 5 creative recipes as a JSON array of objects. Respond ONLY with a JSON array of recipe objects, no markdown, no explanation, no code block, no extra text. Do not wrap your response in triple-backticks or any other formatting. Each object should have "Title", "Ingredients", and "Instructions" fields.`;
   const res = await fetch(`${PROXY}/recipes`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
