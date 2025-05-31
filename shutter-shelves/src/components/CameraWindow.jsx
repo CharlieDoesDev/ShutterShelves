@@ -77,14 +77,57 @@ export default function CameraWindow({ onCapture, onCancel, onProcess }) {
     setShowGrid(false);
   };
 
+  // --- Styling ---
+  const cameraWindowStyle = {
+    position: "relative",
+    width: "min(95vw, 600px)",
+    maxWidth: 600,
+    minWidth: 340,
+    background: "rgba(255,255,255,0.95)",
+    borderRadius: 24,
+    boxShadow: "0 8px 32px 0 rgba(31, 38, 135, 0.18)",
+    padding: 32,
+    margin: "32px auto",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    minHeight: 480,
+    overflow: "hidden"
+  };
+
+  const buttonStyle = {
+    fontSize: 16,
+    padding: "16px 32px",
+    borderRadius: 18,
+    minWidth: 140,
+    margin: "0 8px",
+    background: "linear-gradient(90deg, #6366f1 0%, #a5b4fc 100%)",
+    color: "#fff",
+    border: "none",
+    boxShadow: "0 2px 8px 0 rgba(99,102,241,0.10)",
+    cursor: "pointer",
+    fontWeight: 600,
+    transition: "background 0.2s, box-shadow 0.2s"
+  };
+
+  const cancelButtonStyle = {
+    ...buttonStyle,
+    background: "#e5e7eb",
+    color: "#374151",
+    marginTop: 16
+  };
+
+  // --- Grid view ---
   if (showGrid) {
     return (
-      <div className="camera-window" style={{ position: "relative" }}>
-        <h2 style={{ marginBottom: 8 }}>Select Photos</h2>
-        <PhotoGrid photos={photos} selected={selected} onToggle={handleToggle} />
-        <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
-          <button onClick={handleCancelGrid}>Back</button>
-          <button onClick={handleProcess} disabled={selected.length === 0}>
+      <div className="camera-window" style={{ ...cameraWindowStyle, minHeight: 520 }}>
+        <h2 style={{ marginBottom: 8, fontWeight: 700, fontSize: 22 }}>Select Photos</h2>
+        <div style={{ width: "100%", maxHeight: 320, overflowY: "auto", marginBottom: 16 }}>
+          <PhotoGrid photos={photos} selected={selected} onToggle={handleToggle} />
+        </div>
+        <div style={{ display: "flex", gap: 12, marginTop: 12, width: "100%", justifyContent: "center" }}>
+          <button style={cancelButtonStyle} onClick={handleCancelGrid}>Back</button>
+          <button style={buttonStyle} onClick={handleProcess} disabled={selected.length === 0}>
             Process Selected
           </button>
         </div>
@@ -92,16 +135,17 @@ export default function CameraWindow({ onCapture, onCancel, onProcess }) {
     );
   }
 
+  // --- Camera view ---
   return (
-    <div className="camera-window" style={{ position: "relative" }}>
+    <div className="camera-window" style={cameraWindowStyle}>
       <CameraCounter count={photos.length} />
-      <video ref={videoRef} autoPlay playsInline style={{ width: "100%", borderRadius: 12 }} />
+      <video ref={videoRef} autoPlay playsInline style={{ width: "100%", borderRadius: 18, marginBottom: 18, background: "#e5e7eb" }} />
       <canvas ref={canvasRef} style={{ display: "none" }} />
-      <CameraCaptureButton onCapture={handleCaptureClick} />
-      {photos.length > 0 && <FinishPhotosButton onFinish={handleFinish} />}
-      <button onClick={onCancel} style={{ marginTop: 16 }}>
-        Cancel
-      </button>
+      <div style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <CameraCaptureButton onCapture={handleCaptureClick} />
+        {photos.length > 0 && <FinishPhotosButton onFinish={handleFinish} />}
+        <button style={cancelButtonStyle} onClick={onCancel}>Cancel</button>
+      </div>
     </div>
   );
 }
