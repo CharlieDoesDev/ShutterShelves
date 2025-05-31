@@ -84,3 +84,42 @@ export function fixStepsField(recipe) {
   }
   return recipe;
 }
+
+/**
+ * Remove all occurrences of a pattern from a string.
+ * @param {string} str - The input string
+ * @param {RegExp|string} pattern - The pattern to remove (RegExp or string)
+ * @returns {string}
+ */
+export function removeAll(str, pattern) {
+  if (!str) return str;
+  if (typeof pattern === "string") {
+    return str.split(pattern).join("");
+  } else if (pattern instanceof RegExp) {
+    return str.replace(new RegExp(pattern, "g"), "");
+  }
+  return str;
+}
+
+/**
+ * Aggressively clean a Gemini/AI JSON string by removing common unwanted patterns.
+ * @param {string} raw - The raw string to clean
+ * @returns {string}
+ */
+export function aggressiveGeminiClean(raw) {
+  let str = raw;
+  str = removeAll(str, /^```json\s*/im); // opening code block
+  str = removeAll(str, /```/g); // closing code block
+  str = removeAll(str, /\n/g); // escaped newlines
+  str = removeAll(str, /\\"/g); // escaped quotes
+  str = removeAll(str, /\r/g); // carriage returns
+  str = removeAll(str, /\t/g); // tabs
+  str = removeAll(str, /\"/g); // more escaped quotes
+  str = removeAll(str, "Copy"); // stray 'Copy' text
+  str = removeAll(str, "Edit"); // stray 'Edit' text
+  // Remove outer quotes if present
+  if (str.startsWith('"') && str.endsWith('"')) {
+    str = str.slice(1, -1);
+  }
+  return str.trim();
+}
