@@ -65,7 +65,18 @@ export default function App() {
   return (
     <div className="App">
       <CenterPanel>
-        <StyledButton onClick={InitiateImages}></StyledButton>
+        <StyledButton onClick={() => inputRef.current.click()}>
+          {images.length === 0 ? "Upload/Take Photo(s)" : "Add More"}
+        </StyledButton>
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          multiple
+          onChange={onFileChange}
+          className="hidden"
+        />
       </CenterPanel>
     </div>
   );
