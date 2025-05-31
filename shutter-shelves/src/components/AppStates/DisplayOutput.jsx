@@ -1,7 +1,12 @@
 import React from "react";
 import DisplayRecipes from "../Recipe/DisplayRecipes";
 
-export default function DisplayOutput({ recipes, onNext, onSaveRecipe, savedRecipes }) {
+export default function DisplayOutput({
+  recipes,
+  onNext,
+  onSaveRecipe,
+  savedRecipes,
+}) {
   return (
     <div
       className="display-output"
@@ -13,27 +18,29 @@ export default function DisplayOutput({ recipes, onNext, onSaveRecipe, savedReci
         fontSize: 16,
       }}
     >
-      <h2 style={{ color: "#333" }}>Generated Recipes</h2>
-      <DisplayRecipes
-        recipes={recipes}
-        onSaveRecipe={onSaveRecipe}
-        savedRecipes={savedRecipes}
-      />
-      <button
-        style={{
-          marginTop: 24,
-          padding: "0.5rem 2rem",
-          fontSize: 16,
-          borderRadius: 8,
-          background: "#2563eb",
-          color: "#fff",
-          border: "none",
-          cursor: "pointer",
-        }}
-        onClick={onNext}
-      >
-        Next
-      </button>
+      <CenterPanel>
+        <h2 style={{ color: "#333" }}>Generated Recipes</h2>
+        <DisplayRecipes
+          recipes={recipes}
+          onSaveRecipe={onSaveRecipe}
+          savedRecipes={savedRecipes}
+        />
+        <button
+          style={{
+            marginTop: 24,
+            padding: "0.5rem 2rem",
+            fontSize: 16,
+            borderRadius: 8,
+            background: "#2563eb",
+            color: "#fff",
+            border: "none",
+            cursor: "pointer",
+          }}
+          onClick={onNext}
+        >
+          Next
+        </button>
+      </CenterPanel>
     </div>
   );
 }
