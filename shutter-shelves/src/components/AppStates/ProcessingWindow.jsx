@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import "./ProcessingWindow.css";
 import { asyncProgressBar } from "../../lib/Util.js";
 import CenterPanel from "../SimpleContainers/CenterPanel";
-import { getRecipePrompts, cleanGeminiJsonString } from "../../lib/recipeUtils";
+import { getRecipePrompts, cleanGeminiJsonString, aggressiveGeminiClean } from "../../lib/recipeUtils";
 
 export default function ProcessingWindow({ images, onDone, onProcessed }) {
   const [progress, setProgress] = useState(0);
@@ -14,19 +14,17 @@ export default function ProcessingWindow({ images, onDone, onProcessed }) {
       await asyncProgressBar((p) => {
         if (!cancelled) setProgress(p);
       });
-      // After progress bar, call Gemini API via proxy
+      
       try {
-        const { dataUrlToBase64Object } = await import(
-          "../../lib/imageUploader"
-        );
+        const { dataUrlToBase64Object } = await import("../../lib/imageUploader");
         const PROXY = "https://pantry-pilot-proxy.shuttershells.workers.dev";
         const base64Array = images.map(
           (photo) => dataUrlToBase64Object(photo.dataUrl).base64
         );
-        // Official Gemini Vision prompt
-        const visionPrompt = `You are a kitchen assistant. List all visible food, pantry, or kitchen items in this image. If none are detected, respond exactly: 'No food, pantry, or kitchen items detected.'`;
-        // Robust Gemini Vision call via proxy
+        
+        // Get pantry items from vision API
         const captions = [];
+        const pantryItems = [];
         for (const base64 of base64Array) {
           const res = await fetch(`${PROXY}/vision`, {
             method: "POST",
@@ -35,45 +33,38 @@ export default function ProcessingWindow({ images, onDone, onProcessed }) {
               contents: [
                 {
                   parts: [
-                    { text: visionPrompt },
+                    { text: "List all visible food and pantry items in this image, separated by commas. If none are detected, respond with 'none'." },
                     { inline_data: { mime_type: "image/jpeg", data: base64 } },
                   ],
                 },
               ],
             }),
           });
+          
           if (!res.ok) throw new Error("Gemini Vision error: " + res.status);
           const data = await res.json();
-          // Official Gemini API response parsing
+          
           let caption = "";
-          if (
-            data.candidates &&
-            data.candidates[0]?.content?.parts?.[0]?.text
-          ) {
+          if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
             caption = data.candidates[0].content.parts[0].text;
-          } else if (data.caption) {
-            caption = data.caption;
-          } else if (data.result) {
-            caption = data.result;
-          } else if (data.text) {
-            caption = data.text;
+            // Extract items from caption
+            const items = caption
+              .split(',')
+              .map(item => item.trim())
+              .filter(item => item && item.toLowerCase() !== 'none');
+            pantryItems.push(...items);
           }
           captions.push(caption);
         }
-        // Always proceed, even if captions are unexpected or contain 'no food' message
-        // Gemini pantry/recipe logic
-        const pantryRes = await fetch(`${PROXY}/pantry`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ imagesBase64: base64Array }),
-        });
-        if (!pantryRes.ok)
-          throw new Error("Gemini pantry error: " + pantryRes.status);
-        const pantryItems = await pantryRes.json();
-        // --- NEW: Request N recipes as separate prompts ---
-        const N = 5; // Number of recipes to generate
+
+        // Validate pantry items before requesting recipes
+        if (!pantryItems.length) {
+          throw new Error("No pantry items detected in the images");
+        }
+
+        // Get recipes for the detected items
+        const N = 3; // Number of recipes to generate
         const prompts = getRecipePrompts(pantryItems, N);
-        // Send all prompts in parallel
         const recipeResponses = await Promise.all(
           prompts.map(async (prompt) => {
             const res = await fetch(`${PROXY}/recipes`, {
@@ -81,23 +72,32 @@ export default function ProcessingWindow({ images, onDone, onProcessed }) {
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ items: pantryItems, prompt }),
             });
+            
             if (!res.ok) throw new Error("Gemini recipe error: " + res.status);
             const data = await res.json();
-            // Clean and parse each response as a single recipe object
+            
+            // Clean and parse response
             let recipeObj = null;
             try {
-              recipeObj = JSON.parse(cleanGeminiJsonString(data.completion));
-            } catch {
+              const cleaned = aggressiveGeminiClean(data.completion);
+              recipeObj = JSON.parse(cleaned);
+              if (recipeObj.instructions && !recipeObj.steps) {
+                recipeObj.steps = recipeObj.instructions;
+              }
+            } catch (e) {
+              console.error("Recipe parsing error:", e);
               recipeObj = {
                 title: "Recipe Parse Error",
+                ingredients: [],
                 steps: [data.completion],
+                parseError: true
               };
             }
             return recipeObj;
           })
         );
-        // --- END NEW ---
-        if (onProcessed)
+
+        if (onProcessed) {
           onProcessed({
             pantryItems,
             recipesText: JSON.stringify(recipeResponses, null, 2),
@@ -105,18 +105,24 @@ export default function ProcessingWindow({ images, onDone, onProcessed }) {
             parsedRecipes: recipeResponses,
             captions,
           });
+        }
       } catch (err) {
-        alert("Gemini API error: " + err.message);
-        if (onProcessed)
+        console.error("Processing error:", err);
+        alert("Error: " + err.message);
+        if (onProcessed) {
           onProcessed({
             pantryItems: [],
             recipesText: "",
             images,
             parsedRecipes: [],
+            error: err.message
           });
+        }
       }
+      
       if (!cancelled && onDone) onDone();
     }
+    
     processImages();
     return () => {
       cancelled = true;
@@ -128,10 +134,7 @@ export default function ProcessingWindow({ images, onDone, onProcessed }) {
       <div className="processing-window">
         <h2>Processing...</h2>
         <div className="progress-bar">
-          <div
-            className="progress-bar-inner"
-            style={{ width: `${progress}%` }}
-          />
+          <div className="progress-bar-inner" style={{ width: `${progress}%` }} />
         </div>
         <div>{progress}%</div>
       </div>

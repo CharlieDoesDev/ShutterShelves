@@ -1,30 +1,52 @@
 // src/lib/recipeUtils.js
 export function parseRecipeInput(recipeInput) {
   if (!recipeInput) return null;
-  if (typeof recipeInput === "object") return recipeInput;
+  if (typeof recipeInput === "object") {
+    // Convert 'instructions' to 'steps' for consistency
+    if (recipeInput.instructions && !recipeInput.steps) {
+      recipeInput = {
+        ...recipeInput,
+        steps: recipeInput.instructions,
+      };
+    }
+    return recipeInput;
+  }
 
-  // Try direct JSON parse
+  // Clean the input string first
+  let cleanedInput = cleanGeminiJsonString(recipeInput);
+
+  // Try direct JSON parse with cleaned input
   try {
-    const direct = JSON.parse(recipeInput);
-    return Array.isArray(direct) ? direct[0] || {} : direct;
+    const direct = JSON.parse(cleanedInput);
+    const parsed = Array.isArray(direct) ? direct[0] || {} : direct;
+    // Convert 'instructions' to 'steps' for consistency
+    if (parsed.instructions && !parsed.steps) {
+      parsed.steps = parsed.instructions;
+    }
+    return parsed;
   } catch {
     // Try to extract JSON from text
-    const objMatch = recipeInput.match(/\{[\s\S]*?\}/);
-    const arrMatch = recipeInput.match(/\[[\s\S]*?\]/);
+    const objMatch = cleanedInput.match(/\{[\s\S]*?\}/);
+    const arrMatch = cleanedInput.match(/\[[\s\S]*?\]/);
     let jsonStr = arrMatch ? arrMatch[0] : objMatch ? objMatch[0] : null;
     if (jsonStr) {
       try {
         const parsed = JSON.parse(jsonStr);
-        return Array.isArray(parsed) ? parsed[0] || {} : parsed;
+        const result = Array.isArray(parsed) ? parsed[0] || {} : parsed;
+        // Convert 'instructions' to 'steps' for consistency
+        if (result.instructions && !result.steps) {
+          result.steps = result.instructions;
+        }
+        return result;
       } catch {
-        // fall through
+        // fall through to fallback
       }
     }
     // Fallback: treat as plain text
     return {
-      title: "Recipe",
+      title: "Recipe Parse Error",
       ingredients: [],
-      steps: [recipeInput],
+      steps: [cleanedInput],
       parseError: true,
     };
   }
