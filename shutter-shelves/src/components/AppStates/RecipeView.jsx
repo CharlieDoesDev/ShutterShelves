@@ -1,6 +1,6 @@
 import React from "react";
 import StyledButton from "../SimpleElements/StyledButton";
-import { cleanGeminiJsonString } from "../../lib/recipeUtils";
+import { aggressiveGeminiClean } from "../../lib/recipeUtils";
 
 export default function RecipeView({ recipe, onBack, isSaved, onSave }) {
   if (!recipe) return null;
@@ -8,13 +8,27 @@ export default function RecipeView({ recipe, onBack, isSaved, onSave }) {
   let parsedRecipe;
   try {
     // Clean and parse the recipe JSON
-    const cleanedJson = cleanGeminiJsonString(JSON.stringify(recipe));
+    const cleanedJson = aggressiveGeminiClean(JSON.stringify(recipe));
     parsedRecipe = JSON.parse(cleanedJson);
+
+    // Normalize the recipe structure
+    parsedRecipe = {
+      title: parsedRecipe.title || "Untitled Recipe",
+      ingredients: Array.isArray(parsedRecipe.ingredients)
+        ? parsedRecipe.ingredients
+        : [],
+      steps: parsedRecipe.instructions || parsedRecipe.steps || [],
+    };
   } catch (error) {
     // Fallback to raw recipe text if parsing fails
     parsedRecipe = {
       title: "Invalid Recipe Format",
-      rawText: JSON.stringify(recipe, null, 2),
+      ingredients: [],
+      steps: [
+        typeof recipe === "string"
+          ? recipe
+          : JSON.stringify(recipe, null, 2),
+      ],
     };
   }
 
@@ -33,11 +47,11 @@ export default function RecipeView({ recipe, onBack, isSaved, onSave }) {
             </ul>
           </>
         ) : null}
-        {parsedRecipe.instructions ? (
+        {parsedRecipe.steps ? (
           <>
             <h3>Instructions</h3>
             <ol>
-              {parsedRecipe.instructions.map((step, i) => (
+              {parsedRecipe.steps.map((step, i) => (
                 <li key={i}>{step}</li>
               ))}
             </ol>

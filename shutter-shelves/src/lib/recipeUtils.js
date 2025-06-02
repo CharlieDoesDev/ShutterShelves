@@ -102,7 +102,9 @@ export function aggressiveGeminiClean(raw) {
     .replace(/\}\s*\]/g, "}]")
     .replace(/\}\s*,\s*\{/g, "},{")
     // Remove non-JSON text outside of brackets
-    .replace(/^[^[\{]*([\[\{][\s\S]*[\}\]])[^[\{]*$/, "$1");
+    .replace(/^[^[\{]*([\[\{][\s\S]*[\}\]])[^[\{]*$/, "$1")
+    // Remove any trailing commas in arrays/objects (invalid JSON)
+    .replace(/,\s*([}\]])/g, "$1");
 
   return str.trim();
 }
