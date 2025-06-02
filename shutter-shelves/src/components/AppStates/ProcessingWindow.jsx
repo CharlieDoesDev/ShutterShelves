@@ -93,48 +93,39 @@ export default function ProcessingWindow({ images, onDone, onProcessed }) {
               const res = await retryFetch(`${PROXY}/recipes`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  items: pantryItems,
-                  prompt: `${prompt} IMPORTANT: Respond ONLY with the JSON object. No markdown, no explanation, no surrounding text.`
+                body: JSON.stringify({ 
+                  items: pantryItems, 
+                  prompt,
+                  format: "json"  // Request JSON format explicitly
                 }),
               });
-
-              if (!res.ok) throw new Error(`Recipe generation failed: ${res.status}`);
+              
               const data = await res.json();
-
+              
+              // Clean and parse response
               try {
-                // Clean the response text
                 const cleaned = aggressiveGeminiClean(data.completion);
-                // Parse and validate the recipe
-                let recipe;
-                try {
-                  recipe = JSON.parse(cleaned);
-                } catch (e) {
-                  // Try to extract JSON from the cleaned text
-                  const match = cleaned.match(/\{[\s\S]*\}/);
-                  if (!match) throw new Error('No valid JSON found');
-                  recipe = JSON.parse(match[0]);
-                }
-
-                // Normalize the recipe structure
+                const recipeObj = JSON.parse(cleaned);
+                
+                // Ensure we have the required fields
                 return {
-                  title: recipe.title || `Recipe ${index + 1}`,
-                  ingredients: Array.isArray(recipe.ingredients) ? recipe.ingredients : [],
-                  steps: recipe.instructions || recipe.steps || []
+                  title: recipeObj.title || `Recipe ${index + 1}`,
+                  ingredients: Array.isArray(recipeObj.ingredients) ? recipeObj.ingredients : [],
+                  steps: recipeObj.instructions || recipeObj.steps || [],
                 };
               } catch (e) {
-                console.error("Recipe parsing error:", e, "Raw:", data.completion);
+                console.error("Recipe parsing error:", e);
                 return {
-                  title: `Recipe ${index + 1} (Parse Error)`,
+                  title: "Recipe Parse Error",
                   ingredients: [],
-                  steps: ["Failed to parse recipe response. Please try again."],
+                  steps: ["Failed to parse recipe. Please try again."],
                   parseError: true
                 };
               }
             } catch (err) {
               console.error("Recipe generation error:", err);
               return {
-                title: `Recipe ${index + 1} (Error)`,
+                title: "Recipe Generation Error",
                 ingredients: [],
                 steps: ["Failed to generate recipe. Please try again."],
                 parseError: true
@@ -143,9 +134,9 @@ export default function ProcessingWindow({ images, onDone, onProcessed }) {
           })
         );
 
-        // Filter out failed recipes and format the output
+        // Filter out failed recipes
         const validRecipes = recipeResponses.filter(r => !r.parseError);
-
+        
         if (validRecipes.length === 0) {
           throw new Error("Unable to generate any valid recipes. Please try again.");
         }
