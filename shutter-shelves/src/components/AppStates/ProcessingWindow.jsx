@@ -2,7 +2,30 @@ import React, { useState, useEffect } from "react";
 import "./ProcessingWindow.css";
 import { asyncProgressBar } from "../../lib/Util.js";
 import CenterPanel from "../SimpleContainers/CenterPanel";
-import { getRecipePrompts, cleanGeminiJsonString, aggressiveGeminiClean } from "../../lib/recipeUtils";
+import { getRecipePrompts, aggressiveGeminiClean } from "../../lib/recipeUtils";
+
+async function retryFetch(url, options, maxRetries = 3, delay = 1000) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const res = await fetch(url, options);
+      if (res.ok) return res;
+      
+      // If we get a 502, wait and retry
+      if (res.status === 502) {
+        if (attempt === maxRetries) {
+          throw new Error(`Gemini API unavailable after ${maxRetries} attempts`);
+        }
+        await new Promise(resolve => setTimeout(resolve, delay * attempt));
+        continue;
+      }
+      
+      throw new Error(`API error: ${res.status}`);
+    } catch (err) {
+      if (attempt === maxRetries) throw err;
+      await new Promise(resolve => setTimeout(resolve, delay * attempt));
+    }
+  }
+}
 
 export default function ProcessingWindow({ images, onDone, onProcessed }) {
   const [progress, setProgress] = useState(0);
@@ -26,7 +49,7 @@ export default function ProcessingWindow({ images, onDone, onProcessed }) {
         const captions = [];
         const pantryItems = [];
         for (const base64 of base64Array) {
-          const res = await fetch(`${PROXY}/vision`, {
+          const res = await retryFetch(`${PROXY}/vision`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -41,7 +64,6 @@ export default function ProcessingWindow({ images, onDone, onProcessed }) {
             }),
           });
           
-          if (!res.ok) throw new Error("Gemini Vision error: " + res.status);
           const data = await res.json();
           
           let caption = "";
@@ -66,49 +88,71 @@ export default function ProcessingWindow({ images, onDone, onProcessed }) {
         const N = 3; // Number of recipes to generate
         const prompts = getRecipePrompts(pantryItems, N);
         const recipeResponses = await Promise.all(
-          prompts.map(async (prompt) => {
-            const res = await fetch(`${PROXY}/recipes`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ items: pantryItems, prompt }),
-            });
-            
-            if (!res.ok) throw new Error("Gemini recipe error: " + res.status);
-            const data = await res.json();
-            
-            // Clean and parse response
-            let recipeObj = null;
+          prompts.map(async (prompt, index) => {
             try {
-              const cleaned = aggressiveGeminiClean(data.completion);
-              recipeObj = JSON.parse(cleaned);
-              if (recipeObj.instructions && !recipeObj.steps) {
-                recipeObj.steps = recipeObj.instructions;
+              const res = await retryFetch(`${PROXY}/recipes`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                  items: pantryItems, 
+                  prompt,
+                  format: "json"  // Request JSON format explicitly
+                }),
+              });
+              
+              const data = await res.json();
+              
+              // Clean and parse response
+              try {
+                const cleaned = aggressiveGeminiClean(data.completion);
+                const recipeObj = JSON.parse(cleaned);
+                
+                // Ensure we have the required fields
+                return {
+                  title: recipeObj.title || `Recipe ${index + 1}`,
+                  ingredients: Array.isArray(recipeObj.ingredients) ? recipeObj.ingredients : [],
+                  steps: recipeObj.instructions || recipeObj.steps || [],
+                };
+              } catch (e) {
+                console.error("Recipe parsing error:", e);
+                return {
+                  title: "Recipe Parse Error",
+                  ingredients: [],
+                  steps: ["Failed to parse recipe. Please try again."],
+                  parseError: true
+                };
               }
-            } catch (e) {
-              console.error("Recipe parsing error:", e);
-              recipeObj = {
-                title: "Recipe Parse Error",
+            } catch (err) {
+              console.error("Recipe generation error:", err);
+              return {
+                title: "Recipe Generation Error",
                 ingredients: [],
-                steps: [data.completion],
+                steps: ["Failed to generate recipe. Please try again."],
                 parseError: true
               };
             }
-            return recipeObj;
           })
         );
+
+        // Filter out failed recipes
+        const validRecipes = recipeResponses.filter(r => !r.parseError);
+        
+        if (validRecipes.length === 0) {
+          throw new Error("Unable to generate any valid recipes. Please try again.");
+        }
 
         if (onProcessed) {
           onProcessed({
             pantryItems,
-            recipesText: JSON.stringify(recipeResponses, null, 2),
+            recipesText: JSON.stringify(validRecipes, null, 2),
             images,
-            parsedRecipes: recipeResponses,
+            parsedRecipes: validRecipes,
             captions,
           });
         }
       } catch (err) {
         console.error("Processing error:", err);
-        alert("Error: " + err.message);
+        alert(err.message || "An error occurred while processing your request. Please try again.");
         if (onProcessed) {
           onProcessed({
             pantryItems: [],

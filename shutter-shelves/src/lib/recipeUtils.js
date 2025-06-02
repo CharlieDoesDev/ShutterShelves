@@ -2,149 +2,108 @@
 export function parseRecipeInput(recipeInput) {
   if (!recipeInput) return null;
   if (typeof recipeInput === "object") {
-    // Convert 'instructions' to 'steps' for consistency
-    if (recipeInput.instructions && !recipeInput.steps) {
-      recipeInput = {
-        ...recipeInput,
-        steps: recipeInput.instructions,
-      };
-    }
-    return recipeInput;
+    return normalizeRecipe(recipeInput);
   }
 
   // Clean the input string first
-  let cleanedInput = cleanGeminiJsonString(recipeInput);
+  let cleanedInput = aggressiveGeminiClean(recipeInput);
 
   // Try direct JSON parse with cleaned input
   try {
-    const direct = JSON.parse(cleanedInput);
-    const parsed = Array.isArray(direct) ? direct[0] || {} : direct;
-    // Convert 'instructions' to 'steps' for consistency
-    if (parsed.instructions && !parsed.steps) {
-      parsed.steps = parsed.instructions;
+    const parsed = JSON.parse(cleanedInput);
+    if (Array.isArray(parsed)) {
+      return parsed.map(normalizeRecipe)[0] || createErrorRecipe("Empty recipe array");
     }
-    return parsed;
-  } catch {
+    return normalizeRecipe(parsed);
+  } catch (e) {
     // Try to extract JSON from text
-    const objMatch = cleanedInput.match(/\{[\s\S]*?\}/);
-    const arrMatch = cleanedInput.match(/\[[\s\S]*?\]/);
-    let jsonStr = arrMatch ? arrMatch[0] : objMatch ? objMatch[0] : null;
-    if (jsonStr) {
-      try {
-        const parsed = JSON.parse(jsonStr);
-        const result = Array.isArray(parsed) ? parsed[0] || {} : parsed;
-        // Convert 'instructions' to 'steps' for consistency
-        if (result.instructions && !result.steps) {
-          result.steps = result.instructions;
-        }
-        return result;
-      } catch {
-        // fall through to fallback
-      }
-    }
-    // Fallback: treat as plain text
-    return {
-      title: "Recipe Parse Error",
-      ingredients: [],
-      steps: [cleanedInput],
-      parseError: true,
-    };
-  }
-}
-
-/**
- * Cleans Gemini's JSON output by removing triple-backtick blocks, outer quotes, unescaping inner quotes, and removing \n.
- * @param {string} raw - The raw string from Gemini
- * @returns {string} - Cleaned JSON string
- */
-export function cleanGeminiJsonString(raw) {
-  if (!raw) return raw;
-  let str = raw.trim();
-  // Remove opening and closing triple-backtick blocks
-  str = str.replace(/^```json\s*/i, "").replace(/```$/i, "");
-  // Remove outer quotes if present
-  if (str.startsWith('"') && str.endsWith('"')) {
-    str = str.slice(1, -1);
-  }
-  // Unescape inner quotes
-  str = str.replace(/\\"/g, '"');
-  // Replace \n with real line breaks or remove
-  str = str.replace(/\\n/g, "");
-  return str;
-}
-
-/**
- * If a recipe object has a 'steps' field that is a single string containing a JSON array (with triple-backticks etc),
- * this will parse and replace it with the actual array of objects.
- * @param {object} recipe - The recipe object to fix
- * @returns {object} - The fixed recipe object
- */
-export function fixStepsField(recipe) {
-  if (!recipe || !Array.isArray(recipe.steps)) return recipe;
-  // If steps is a single string and looks like a JSON array, try to parse it
-  if (recipe.steps.length === 1 && typeof recipe.steps[0] === "string") {
-    let stepsStr = recipe.steps[0].trim();
-    // Remove triple-backtick and json markers
-    stepsStr = stepsStr.replace(/^```json\s*/i, "").replace(/```$/i, "");
-    // Remove outer quotes if present
-    if (stepsStr.startsWith('"') && stepsStr.endsWith('"')) {
-      stepsStr = stepsStr.slice(1, -1);
-    }
-    // Unescape inner quotes
-    stepsStr = stepsStr.replace(/\\"/g, '"');
-    // Replace \n with real line breaks or remove
-    stepsStr = stepsStr.replace(/\\n/g, "");
-    // Try to parse as JSON array
     try {
-      const parsed = JSON.parse(stepsStr);
-      if (Array.isArray(parsed)) {
-        return { ...recipe, steps: parsed };
+      // Look for array of recipes first
+      const arrayMatch = cleanedInput.match(/\[[\s\S]*\]/);
+      if (arrayMatch) {
+        const array = JSON.parse(arrayMatch[0]);
+        return array.map(normalizeRecipe)[0] || createErrorRecipe("Empty recipe array");
       }
-    } catch (e) {
-      // If parsing fails, leave as is
+
+      // Try single recipe object
+      const objMatch = cleanedInput.match(/\{[\s\S]*\}/);
+      if (objMatch) {
+        return normalizeRecipe(JSON.parse(objMatch[0]));
+      }
+    } catch {
+      // If all parsing fails, return error recipe with cleaned text
+      return createErrorRecipe(cleanedInput);
     }
   }
-  return recipe;
+  return createErrorRecipe(cleanedInput);
 }
 
-/**
- * Remove all occurrences of a pattern from a string.
- * @param {string} str - The input string
- * @param {RegExp|string} pattern - The pattern to remove (RegExp or string)
- * @returns {string}
- */
-export function removeAll(str, pattern) {
-  if (!str) return str;
-  if (typeof pattern === "string") {
-    return str.split(pattern).join("");
-  } else if (pattern instanceof RegExp) {
-    return str.replace(pattern, ""); // Use the pattern as-is to preserve flags
+function normalizeRecipe(recipe) {
+  if (!recipe || typeof recipe !== 'object') {
+    return createErrorRecipe("Invalid recipe format");
   }
-  return str;
+
+  // Normalize fields
+  const normalized = {
+    title: recipe.title || "Untitled Recipe",
+    ingredients: [],
+    steps: []
+  };
+
+  // Handle ingredients
+  if (recipe.ingredients) {
+    normalized.ingredients = Array.isArray(recipe.ingredients) 
+      ? recipe.ingredients 
+      : [recipe.ingredients];
+  }
+
+  // Handle steps/instructions
+  const instructions = recipe.instructions || recipe.steps;
+  if (instructions) {
+    normalized.steps = Array.isArray(instructions)
+      ? instructions
+      : [instructions];
+  }
+
+  return normalized;
+}
+
+function createErrorRecipe(errorText) {
+  return {
+    title: "Recipe Parse Error",
+    ingredients: [],
+    steps: [errorText],
+    parseError: true
+  };
 }
 
 /**
  * Aggressively clean a Gemini/AI JSON string by removing common unwanted patterns.
  * @param {string} raw - The raw string to clean
- * @returns {string}
+ * @returns {string} - Cleaned JSON string
  */
 export function aggressiveGeminiClean(raw) {
-  let str = raw;
-  // Remove code block markers (triple backticks, with or without 'json')
-  str = removeAll(str, /^```json\s*/gim); // opening code block
-  str = removeAll(str, /```/g); // closing code block
-  // Remove both escaped and real newlines
-  str = removeAll(str, /\\n/g); // escaped newlines
-  str = removeAll(str, /\r?\n/g); // actual newlines
-  // Remove escaped quotes (but NOT all quotes)
-  str = removeAll(str, /\\"/g); // escaped quotes
-  // Remove stray 'Copy' and 'Edit' text
-  str = removeAll(str, /Copy/g);
-  str = removeAll(str, /Edit/g);
-  // Remove outer quotes if present
-  if (str.startsWith('"') && str.endsWith('"')) {
-    str = str.slice(1, -1);
-  }
+  if (!raw) return "";
+  let str = raw.toString().trim();
+
+  // Handle common Gemini formatting issues
+  str = str
+    // Remove markdown code blocks
+    .replace(/```(?:json)?\s*([\s\S]*?)\s*```/g, "$1")
+    // Remove surrounding quotes and escape characters
+    .replace(/^"([\s\S]*)"$/, "$1")
+    .replace(/\\"/g, '"')
+    .replace(/\\n/g, " ")
+    // Remove any remaining newlines and extra spaces
+    .replace(/\r?\n/g, " ")
+    .replace(/\s+/g, " ")
+    // Clean up array/object formatting
+    .replace(/\[\s*\{/g, "[{")
+    .replace(/\}\s*\]/g, "}]")
+    .replace(/\}\s*,\s*\{/g, "},{")
+    // Remove non-JSON text outside of brackets
+    .replace(/^[^[\{]*([\[\{][\s\S]*[\}\]])[^[\{]*$/, "$1");
+
   return str.trim();
 }
 
