@@ -1,23 +1,34 @@
+// src/components/ProcessingWindow/ProcessingWindow.jsx
 import React, { useState, useEffect } from "react";
 import "./ProcessingWindow.css";
 import { asyncProgressBar } from "../../lib/Util.js";
 import CenterPanel from "../SimpleContainers/CenterPanel";
-import {
-  getRecipePrompts,
-  aggressiveGeminiClean,
-  parseRecipeInput
-} from "../../lib/recipeUtils";
+import { parseRecipeInput } from "../../lib/recipeUtils";
 
 async function retryFetch(url, options, maxRetries = 3, delay = 1000) {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       const res = await fetch(url, options);
       if (res.ok) return res;
+
+      // Try to read error body (if JSON) or fallback to text
+      let errorBody;
+      try {
+        errorBody = await res.json();
+      } catch {
+        errorBody = await res.text();
+      }
+      console.warn(
+        `❌ ${url} → ${res.status} (attempt ${attempt}/${maxRetries})`,
+        errorBody
+      );
+
+      // If transient (502), retry with backoff
       if (res.status === 502 && attempt < maxRetries) {
         await new Promise((r) => setTimeout(r, delay * attempt));
         continue;
       }
-      throw new Error(`API error: ${res.status}`);
+      throw new Error(`${res.status} - ${JSON.stringify(errorBody)}`);
     } catch (err) {
       if (attempt === maxRetries) throw err;
       await new Promise((r) => setTimeout(r, delay * attempt));
@@ -31,113 +42,111 @@ export default function ProcessingWindow({ images, onDone, onProcessed }) {
   useEffect(() => {
     let cancelled = false;
 
-    async function processImages() {
-      // 1) Kick off a fake “loading” animation to show initial progress
+    async function processAll() {
+      // 1) Animate initial bar (0–10%)
       await asyncProgressBar((p) => {
-        if (!cancelled) setProgress(p * 0.2); // scale to 0–20%
+        if (!cancelled) setProgress(p * 0.1);
       });
 
-      // 2) Convert each image to base64, call vision API
+      // 2) Convert DataURLs → raw Base64 strings
       const { dataUrlToBase64Object } = await import(
         "../../lib/imageUploader"
       );
-      const PROXY = "https://pantry-pilot-proxy.shuttershells.workers.dev";
-      const base64Array = images.map((photo) =>
+      const rawBase64Array = images.map((photo) =>
         dataUrlToBase64Object(photo.dataUrl).base64
       );
 
-      const pantryItems = [];
-      const captions = [];
-
+      // 3) CALL /pantry endpoint once with all base64 images
       try {
-        let idx = 0;
-        for (const base64 of base64Array) {
-          const res = await retryFetch(`${PROXY}/vision`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              // your proxy’s contract might vary—double-check!
-              prompt:
-                "List all visible food and pantry items in this image, separated by commas. If none are detected, respond with 'none'.",
-              image_data: base64
-            }),
-          });
-          const data = await res.json();
-          const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-          captions.push(text);
-
-          // split on commas, trim out “none”
-          const items = text
-            .split(",")
-            .map((t) => t.trim())
-            .filter((t) => t && t.toLowerCase() !== "none");
-          pantryItems.push(...items);
-
-          // increment progress (20–35%)
-          idx++;
-          if (!cancelled) setProgress(20 + (15 * idx) / base64Array.length);
+        if (rawBase64Array.length === 0) {
+          throw new Error("No images to process");
         }
 
-        if (!pantryItems.length) {
+        // Build JSON body: either imagesBase64 or imageBase64
+        const pantryPayload =
+          rawBase64Array.length === 1
+            ? { imageBase64: rawBase64Array[0] }
+            : { imagesBase64: rawBase64Array };
+
+        console.log("➡️ POST /pantry", pantryPayload);
+        const pantryRes = await retryFetch(
+          "https://pantry-pilot-proxy.shuttershells.workers.dev/pantry",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(pantryPayload),
+          }
+        );
+        const pantryItems = await pantryRes.json();
+        console.log("🏷️ Detected pantry items:", pantryItems);
+
+        // 3a) Update progress after pantry (10–30%)
+        if (!cancelled) setProgress(30);
+
+        if (!Array.isArray(pantryItems) || pantryItems.length === 0) {
           throw new Error("No pantry items detected in the images");
         }
 
-        // 3) Build prompts and fetch recipes
-        const N = 3; // how many recipes
-        const prompts = getRecipePrompts(pantryItems, N);
+        // 4) CALL /recipes with exactly { items: [ … ] }
+        console.log("➡️ POST /recipes", { items: pantryItems });
+        const recipeRes = await retryFetch(
+          "https://pantry-pilot-proxy.shuttershells.workers.dev/recipes",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ items: pantryItems }),
+          }
+        );
+        const recipeJson = await recipeRes.json();
+        const rawCompletion = recipeJson.completion || "";
+        console.log("📩 Raw recipe completion:", rawCompletion);
 
-        const recipeResponses = [];
-        for (let i = 0; i < prompts.length; i++) {
-          const prompt = prompts[i];
-          try {
-            const res = await retryFetch(`${PROXY}/recipes`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ prompt }), // proxy likely only needs prompt
-            });
-            const data = await res.json();
+        // 4a) Update progress before parsing (30–60%)
+        if (!cancelled) setProgress(60);
 
-            // 4) Parse via parseRecipeInput instead of raw JSON.parse
-            const recipeObj = parseRecipeInput(data.completion || data.text);
-            if (recipeObj.parseError) {
-              recipeResponses.push({
-                title: "Recipe Parse Error",
-                ingredients: [],
-                steps: ["Failed to parse recipe. Please try again."],
-                parseError: true,
-              });
-            } else {
-              recipeResponses.push(recipeObj);
-            }
-          } catch (err) {
-            recipeResponses.push({
-              title: "Recipe Generation Error",
-              ingredients: [],
-              steps: ["Failed to generate recipe. Please try again."],
-              parseError: true,
+        // 5) Parse Gemini’s free-text into structured recipe objects
+        //    parseRecipeInput will return { parseError: true } if it can’t parse.
+        let parsed = parseRecipeInput(rawCompletion);
+        // If Gemini returned multiple recipes in an array, parseRecipeInput will pick the first valid one.
+        // If you’d prefer to extract an array of 5 recipe‐objects, you could adapt parseRecipeInput to return an array.
+        const parsedArray = Array.isArray(parsed)
+          ? parsed
+          : [parsed];
+
+        // 5a) Update progress (60–80%)
+        if (!cancelled) setProgress(80);
+
+        // 6) Separate valid vs. parse-errors
+        const validRecipes = parsedArray.filter((r) => !r.parseError);
+        const rawAttempts = parsedArray.map((r) => ({
+          title: r.title,
+          steps: r.steps,
+          parseError: !!r.parseError,
+        }));
+
+        // 7) If no valid recipe, pass rawAttempts for debugging
+        if (validRecipes.length === 0) {
+          if (!cancelled && onProcessed) {
+            onProcessed({
+              pantryItems,
+              captions: [], // the /pantry endpoint no longer returns captions
+              parsedRecipes: [], 
+              rawAttempts,
+              error: null,
             });
           }
-
-          // bump progress from 35% up to 90% over all recipes
-          if (!cancelled) {
-            setProgress(35 + (55 * (i + 1)) / prompts.length);
-          }
+          if (!cancelled && onDone) onDone();
+          return;
         }
 
-        // 5) Filter out parse errors
-        const validRecipes = recipeResponses.filter((r) => !r.parseError);
-        if (!validRecipes.length) {
-          throw new Error("Unable to generate any valid recipes. Please try again.");
-        }
-
-        // 6) Hand back results (only if component still mounted)
+        // 8) Success: return the valid recipes
         if (!cancelled && onProcessed) {
           onProcessed({
             pantryItems,
-            recipesText: JSON.stringify(validRecipes, null, 2),
-            images,
+            captions: [], // still empty; /pantry only returns items
             parsedRecipes: validRecipes,
-            captions,
+            rawAttempts,
+            error: null,
           });
         }
       } catch (err) {
@@ -145,19 +154,24 @@ export default function ProcessingWindow({ images, onDone, onProcessed }) {
         if (!cancelled && onProcessed) {
           onProcessed({
             pantryItems: [],
-            recipesText: "",
-            images,
+            captions: [],
             parsedRecipes: [],
+            rawAttempts: [],
             error: err.message,
           });
         }
-        alert(err.message || "An error occurred while processing your request.");
       } finally {
-        if (!cancelled && onDone) onDone();
+        // 9) Finish progress bar (80–100%)
+        if (!cancelled) {
+          await asyncProgressBar((p) => {
+            setProgress(80 + 20 * p);
+          });
+          if (onDone) onDone();
+        }
       }
     }
 
-    processImages();
+    processAll();
     return () => {
       cancelled = true;
     };

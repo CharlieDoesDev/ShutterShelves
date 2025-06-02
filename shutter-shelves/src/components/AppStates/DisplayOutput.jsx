@@ -6,14 +6,14 @@ import CenterPanel from "../SimpleContainers/CenterPanel";
 export default function DisplayOutput({
   pantryItems = [],
   captions = [],
-  parsedRecipes = null,   // ← Start as null until real data arrives
-  rawAttempts = [],       // ← Optional: if you want to show parse‐error details
+  parsedRecipes = null,   // null until real data arrives
+  rawAttempts = [],       // for debug when parseErrors occur
   error = null,
   onNext,
   onSaveRecipe,
   savedRecipes = [],
 }) {
-  // If we haven’t received “parsedRecipes” yet, show a “Start” button or a spinner
+  // 1. If still “waiting to start” (parsedRecipes === null), show a Start button
   if (parsedRecipes === null && !error) {
     return (
       <CenterPanel>
@@ -35,7 +35,7 @@ export default function DisplayOutput({
     );
   }
 
-  // Once parsedRecipes is [] or [ …some recipe objects… ], we render the UI below:
+  // 2. Otherwise, show the results (or errors)
   return (
     <div
       className="display-output"
@@ -51,7 +51,7 @@ export default function DisplayOutput({
       <CenterPanel>
         <h2>Generated Recipes</h2>
 
-        {/* 1. If there was a fatal error, show it */}
+        {/* A. Fatal error */}
         {error && (
           <div
             style={{
@@ -66,7 +66,7 @@ export default function DisplayOutput({
           </div>
         )}
 
-        {/* 2. Show detected pantry items, if any */}
+        {/* B. Show detected pantry items, if any */}
         {!error && pantryItems.length > 0 && (
           <div
             style={{
@@ -85,7 +85,7 @@ export default function DisplayOutput({
           </div>
         )}
 
-        {/* 3. (Optional) Show raw “captions” from the vision API, so you can verify what it saw */}
+        {/* C. (Optional) Show raw “captions” if you ever want them */}
         {!error && captions.length > 0 && (
           <div style={{ marginBottom: "1rem", fontStyle: "italic" }}>
             <strong>Vision Captions:</strong>
@@ -97,24 +97,28 @@ export default function DisplayOutput({
           </div>
         )}
 
-        {/* 4. If we have at least one valid recipe, render it via <DisplayRecipes> */}
-        {!error && Array.isArray(parsedRecipes) && parsedRecipes.length > 0 && (
-          <DisplayRecipes
-            recipes={parsedRecipes}
-            onSaveRecipe={onSaveRecipe}
-            savedRecipes={savedRecipes}
-          />
-        )}
+        {/* D. If we have at least one valid recipe, render via <DisplayRecipes> */}
+        {!error &&
+          Array.isArray(parsedRecipes) &&
+          parsedRecipes.length > 0 && (
+            <DisplayRecipes
+              recipes={parsedRecipes}
+              onSaveRecipe={onSaveRecipe}
+              savedRecipes={savedRecipes}
+            />
+          )}
 
-        {/* 5. If there were no parse‐errors but parsedRecipes is an empty array, show a “no recipes” message */}
-        {!error && Array.isArray(parsedRecipes) && parsedRecipes.length === 0 && (
-          <div style={{ marginTop: "1rem", color: "#666" }}>
-            <p>No valid recipes generated. Try different images or check your inputs.</p>
-          </div>
-        )}
+        {/* E. If no recipes but no parse-attempts at all, show fallback */}
+        {!error &&
+          Array.isArray(parsedRecipes) &&
+          parsedRecipes.length === 0 &&
+          rawAttempts.length === 0 && (
+            <div style={{ marginTop: "1rem", color: "#666" }}>
+              <p>No valid recipes generated. Try different images or check your inputs.</p>
+            </div>
+          )}
 
-        {/* 6. If all attempts failed to parse (parsedRecipes === [] but rawAttempts is non‐empty),
-             show each attempt’s “steps” array so you can debug. */}
+        {/* F. If all attempts failed to parse, show each attempt’s error details */}
         {!error &&
           Array.isArray(parsedRecipes) &&
           parsedRecipes.length === 0 &&
@@ -138,16 +142,18 @@ export default function DisplayOutput({
                     {attempt.title || "Recipe Parse Error"}
                   </p>
                   <ul style={{ margin: 0, paddingLeft: "1rem" }}>
-                    {Array.isArray(attempt.steps)
-                      ? attempt.steps.map((line, i) => <li key={i}>{line}</li>)
-                      : <li>{String(attempt.steps)}</li>}
+                    {Array.isArray(attempt.steps) ? (
+                      attempt.steps.map((line, i) => <li key={i}>{line}</li>)
+                    ) : (
+                      <li>{String(attempt.steps)}</li>
+                    )}
                   </ul>
                 </div>
               ))}
             </div>
           )}
 
-        {/* 7. “Next” button at the bottom, always visible once we've loaded */}
+        {/* G. “Next” button at the bottom */}
         <div style={{ textAlign: "center", marginTop: "2rem" }}>
           <button
             style={{
