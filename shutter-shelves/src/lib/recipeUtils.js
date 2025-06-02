@@ -86,25 +86,48 @@ export function aggressiveGeminiClean(raw) {
   if (!raw) return "";
   let str = raw.toString().trim();
 
-  // Handle common Gemini formatting issues
+  // First pass: Basic cleanup
   str = str
     // Remove markdown code blocks
     .replace(/```(?:json)?\s*([\s\S]*?)\s*```/g, "$1")
-    // Remove surrounding quotes and escape characters
-    .replace(/^"([\s\S]*)"$/, "$1")
+    // Remove stray backticks
+    .replace(/`/g, '')
+    // Fix escaped quotes and slashes
     .replace(/\\"/g, '"')
-    .replace(/\\n/g, " ")
-    // Remove any remaining newlines and extra spaces
-    .replace(/\r?\n/g, " ")
-    .replace(/\s+/g, " ")
-    // Clean up array/object formatting
-    .replace(/\[\s*\{/g, "[{")
-    .replace(/\}\s*\]/g, "}]")
-    .replace(/\}\s*,\s*\{/g, "},{")
-    // Remove non-JSON text outside of brackets
-    .replace(/^[^[\{]*([\[\{][\s\S]*[\}\]])[^[\{]*$/, "$1")
-    // Remove any trailing commas in arrays/objects (invalid JSON)
-    .replace(/,\s*([}\]])/g, "$1");
+    .replace(/\\\\/g, '\\')
+    // Convert escaped newlines to spaces
+    .replace(/\\n/g, ' ')
+    // Remove actual newlines and excess whitespace
+    .replace(/\r?\n/g, ' ')
+    .replace(/\s+/g, ' ');
+
+  // Second pass: Fix array and object formatting
+  str = str
+    // Fix array formations
+    .replace(/\[\s*\{/g, '[{')
+    .replace(/\}\s*\]/g, '}]')
+    .replace(/\}\s*,\s*\{/g, '},{')
+    // Remove any text outside of valid JSON structure
+    .replace(/^[^[\{]*([\[\{][\s\S]*[\}\]])[^[\{]*$/, '$1')
+    // Fix trailing commas
+    .replace(/,(\s*[}\]])/g, '$1')
+    // Fix missing quotes around property names
+    .replace(/(\{|\,)\s*([a-zA-Z0-9_]+)\s*\:/g, '$1"$2":');
+
+  // Final pass: Additional JSON structure fixes
+  str = str
+    // Ensure arrays of strings have quotes
+    .replace(/\[(([^"'\[\]]*,?\s*)*)\]/g, (match, contents) => {
+      if (!contents.trim()) return '[]';
+      return '[' + contents.split(',')
+        .map(item => item.trim())
+        .filter(item => item)
+        .map(item => item.startsWith('"') ? item : `"${item}"`)
+        .join(',') + ']';
+    })
+    // Remove any remaining invalid characters
+    .replace(/(["\]}])([^\s,"\]}])+/g, '$1')
+    .replace(/([^\s,"\[{])+(["[{])/g, '$2');
 
   return str.trim();
 }
