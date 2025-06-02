@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import "./ProcessingWindow.css";
 import { asyncProgressBar } from "../../lib/Util.js";
 import CenterPanel from "../SimpleContainers/CenterPanel";
+import { getRecipePrompts, cleanGeminiJsonString } from "../../lib/recipeUtils";
 
 export default function ProcessingWindow({ images, onDone, onProcessed }) {
   const [progress, setProgress] = useState(0);
@@ -70,9 +71,6 @@ export default function ProcessingWindow({ images, onDone, onProcessed }) {
           throw new Error("Gemini pantry error: " + pantryRes.status);
         const pantryItems = await pantryRes.json();
         // --- NEW: Request N recipes as separate prompts ---
-        const { getRecipePrompts, cleanGeminiJsonString } = await import(
-          "../../lib/recipeUtils"
-        );
         const N = 5; // Number of recipes to generate
         const prompts = getRecipePrompts(pantryItems, N);
         // Send all prompts in parallel
