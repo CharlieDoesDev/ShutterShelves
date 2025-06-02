@@ -164,13 +164,3 @@ export function getRecipePrompts(items, n) {
   }
   return prompts;
 }
-
-/**
- * Clean and convert Gemini's JSON output into a single-line format.
- * @param {string} jsonString - The raw JSON string from Gemini
- * @returns {string} - Cleaned single-line JSON string
- */
-export function cleanGeminiJsonString(jsonString) {
-  if (!jsonString) return "";
-  return jsonString.replace(/\s+/g, " ").trim();
-}
