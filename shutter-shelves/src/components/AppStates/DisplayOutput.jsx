@@ -6,14 +6,36 @@ import CenterPanel from "../SimpleContainers/CenterPanel";
 export default function DisplayOutput({
   pantryItems = [],
   captions = [],
-  parsedRecipes = [],
+  parsedRecipes = null,   // ← Start as null until real data arrives
+  rawAttempts = [],       // ← Optional: if you want to show parse‐error details
   error = null,
   onNext,
   onSaveRecipe,
   savedRecipes = [],
 }) {
-  const hasRecipes = Array.isArray(parsedRecipes) && parsedRecipes.length > 0;
+  // If we haven’t received “parsedRecipes” yet, show a “Start” button or a spinner
+  if (parsedRecipes === null && !error) {
+    return (
+      <CenterPanel>
+        <button
+          style={{
+            padding: "0.75rem 2rem",
+            fontSize: 16,
+            borderRadius: 8,
+            background: "#2563eb",
+            color: "#fff",
+            border: "none",
+            cursor: "pointer",
+          }}
+          onClick={onNext}
+        >
+          Start
+        </button>
+      </CenterPanel>
+    );
+  }
 
+  // Once parsedRecipes is [] or [ …some recipe objects… ], we render the UI below:
   return (
     <div
       className="display-output"
@@ -29,7 +51,7 @@ export default function DisplayOutput({
       <CenterPanel>
         <h2>Generated Recipes</h2>
 
-        {/* 1) If there was an error during processing, show it */}
+        {/* 1. If there was a fatal error, show it */}
         {error && (
           <div
             style={{
@@ -44,7 +66,7 @@ export default function DisplayOutput({
           </div>
         )}
 
-        {/* 2) Show which pantry items were detected (if any) */}
+        {/* 2. Show detected pantry items, if any */}
         {!error && pantryItems.length > 0 && (
           <div
             style={{
@@ -63,10 +85,10 @@ export default function DisplayOutput({
           </div>
         )}
 
-        {/* 3) Optionally show the raw captions from vision (if you want) */}
+        {/* 3. (Optional) Show raw “captions” from the vision API, so you can verify what it saw */}
         {!error && captions.length > 0 && (
           <div style={{ marginBottom: "1rem", fontStyle: "italic" }}>
-            <strong>Vision Captions:</strong>{" "}
+            <strong>Vision Captions:</strong>
             {captions.map((c, i) => (
               <div key={i} style={{ marginTop: "0.25rem" }}>
                 • {c}
@@ -75,25 +97,57 @@ export default function DisplayOutput({
           </div>
         )}
 
-        {/* 4) If there are valid recipes, hand them off to <DisplayRecipes> */}
-        {!error && hasRecipes && (
-          <>
-            <DisplayRecipes
-              recipes={parsedRecipes}
-              onSaveRecipe={onSaveRecipe}
-              savedRecipes={savedRecipes}
-            />
-          </>
+        {/* 4. If we have at least one valid recipe, render it via <DisplayRecipes> */}
+        {!error && Array.isArray(parsedRecipes) && parsedRecipes.length > 0 && (
+          <DisplayRecipes
+            recipes={parsedRecipes}
+            onSaveRecipe={onSaveRecipe}
+            savedRecipes={savedRecipes}
+          />
         )}
 
-        {/* 5) If there were no errors, but also no recipes, show a fallback */}
-        {!error && !hasRecipes && (
+        {/* 5. If there were no parse‐errors but parsedRecipes is an empty array, show a “no recipes” message */}
+        {!error && Array.isArray(parsedRecipes) && parsedRecipes.length === 0 && (
           <div style={{ marginTop: "1rem", color: "#666" }}>
             <p>No valid recipes generated. Try different images or check your inputs.</p>
           </div>
         )}
 
-        {/* 6) Always show the “Next” button (or hide it until something is done) */}
+        {/* 6. If all attempts failed to parse (parsedRecipes === [] but rawAttempts is non‐empty),
+             show each attempt’s “steps” array so you can debug. */}
+        {!error &&
+          Array.isArray(parsedRecipes) &&
+          parsedRecipes.length === 0 &&
+          rawAttempts.length > 0 && (
+            <div style={{ marginTop: "1rem", color: "#900" }}>
+              <p>
+                <strong>All recipe attempts failed to parse:</strong>
+              </p>
+              {rawAttempts.map((attempt, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    background: "#fee",
+                    padding: "0.5rem",
+                    borderRadius: 4,
+                    marginBottom: "0.75rem",
+                  }}
+                >
+                  <p>
+                    <strong>Attempt #{idx + 1}:</strong>{" "}
+                    {attempt.title || "Recipe Parse Error"}
+                  </p>
+                  <ul style={{ margin: 0, paddingLeft: "1rem" }}>
+                    {Array.isArray(attempt.steps)
+                      ? attempt.steps.map((line, i) => <li key={i}>{line}</li>)
+                      : <li>{String(attempt.steps)}</li>}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          )}
+
+        {/* 7. “Next” button at the bottom, always visible once we've loaded */}
         <div style={{ textAlign: "center", marginTop: "2rem" }}>
           <button
             style={{
